@@ -43,15 +43,26 @@
 
 // export default SuccessScreen;
 
-import React from 'react';
+import React ,{useEffect,useState} from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const SuccessScreen = ({ navigation, route }) => {
-  const { onNextLevel } = route.params;
+  const { levelNumber } = route.params;
+  const [question, setQuestion] = useState(null);
+
+  useEffect(() => {
+    fetch(`http://riddlexapi.pythonanywhere.com/api/levels/${levelNumber}/`)
+      .then((response) => response.json())
+      .then((data) => {
+        setQuestion(data.math_question);
+      })
+      .catch((error) => console.error('Error fetching data:', error));
+  }, [levelNumber]);
 
   const handleNextLevel = () => {
-    onNextLevel();
+    // You can add any logic related to moving to the next level here
+    navigation.navigate('QuestionScreen', { levelNumber: levelNumber + 1 });
   };
 
   return (

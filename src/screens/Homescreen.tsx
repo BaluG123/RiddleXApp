@@ -1,13 +1,19 @@
 // HomeScreen.js
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const Homescreen = ({ navigation }) => {
+
+
   const handleLevelsPress = () => {
     navigation.navigate('LevelScreen');
   };
+
+
+
+
 
   return (
     <View style={styles.container}>
@@ -17,7 +23,7 @@ const Homescreen = ({ navigation }) => {
       {/* Play icon */}
       <TouchableOpacity onPress={handleLevelsPress}>
         <View style={styles.playIconContainer}>
-          <Icon name="play-arrow" size={32} color="white"/>
+          <Icon name="play-arrow" size={32} color="white" />
         </View>
       </TouchableOpacity>
 
@@ -38,13 +44,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#333333',
   },
   appName: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
-    color:'black'
+    color: '#FFFFFF'
   },
   playIconContainer: {
     backgroundColor: 'black', // Customize the background color
@@ -58,7 +64,7 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 18,
     marginVertical: 8,
-    color: 'black', // Customize the text color
+    color: '#FFFFFF', // Customize the text color
   },
 });
 

@@ -29,7 +29,7 @@ const Levelscreen = ({ navigation }) => {
         <TouchableOpacity
           onPress={() => navigation.goBack()} // You can customize the back button behavior
         >
-          <Icon name="keyboard-arrow-left" size={24} color="black" />
+          <Icon name="keyboard-arrow-left" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Levels</Text>
       </View>
@@ -48,19 +48,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#333333',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-
+    marginBottom: 10,
+    backgroundColor:'#333333',
+    height:40,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     marginLeft: 8,
-    color:'black'
+    color:'#FFFFFF'
   },
   levelBox: {
     flex: 1,
@@ -70,11 +71,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     margin: 8,
+    backgroundColor:'#333333'
   },
   levelNumber: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#FFFFFF'
   },
 });
 
