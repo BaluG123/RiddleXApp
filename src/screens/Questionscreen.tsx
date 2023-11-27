@@ -207,6 +207,10 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFe
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import SuccessScreen from './SuccessScreen';
 import Sound from 'react-native-sound';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import {
+  responsiveFontSize as fs
+} from "react-native-responsive-dimensions";
 
 
 const Questionscreen = ({ route, navigation }) => {
@@ -266,6 +270,14 @@ const Questionscreen = ({ route, navigation }) => {
   }
 
   const handleSubmit = () => {
+    if (!inputValue.trim()) {
+      // If inputValue is empty or contains only whitespace
+      setErrorMessage('Please fill in the answer.');
+      setTimeout(() => {
+        setErrorMessage(null);
+      }, 3000);
+      return; // Exit the function to prevent further execution
+    }
     if (inputValue === answer.toString()) {
       if (soundOn) {
         const successSound = new Sound('success.mp3', Sound.MAIN_BUNDLE, (error) => {
@@ -331,7 +343,7 @@ const Questionscreen = ({ route, navigation }) => {
           <TouchableOpacity
             onPress={() => navigation.goBack()} // You can customize the back button behavior
           >
-            <MaterialIcons name="keyboard-arrow-left" size={24} color="white" />
+            <MaterialIcons name="keyboard-arrow-left" size={fs(4.2)} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Level {levelNumber}</Text>
           <TouchableOpacity onPress={toggleSound}>
@@ -341,7 +353,7 @@ const Questionscreen = ({ route, navigation }) => {
         {/* 70% of the screen for the question */}
         {loading ? ( // Display ActivityIndicator while loading
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFFFFF" />
+            <ActivityIndicator size="large" color="red" />
           </View>
         ) : (
           <View style={styles.questionContainer}>
@@ -457,81 +469,99 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#333333',
+    borderWidth:hp(0.1),
+    borderColor:'#ccc'
   },
   question: {
-    fontSize: 24,
-    fontWeight: '200',
+    fontSize: fs(3.6),
+    fontWeight: '100',
     color: '#FFFFFF',
   },
   inputContainer: {
     flex: 0.2,
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    padding: 5,
+    paddingHorizontal: hp(0.1),
+    paddingTop: hp(1),
+    padding: hp(0.1),
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: hp(2),
   },
   input: {
     flex: 0.48,
-    borderWidth: 1,
-    padding: 10,
+    padding: wp(2),
     color: '#FFFFFF',
-    width: 150,
+    width: wp(1),
+    borderWidth:hp(0.1),
+    backgroundColor:'#333333',
+    borderColor:'#ccc'
   },
   smallButton: {
     flex: 0.2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#333333',
-    marginRight: 10
+    marginRight: wp(1),
+    borderWidth:hp(0.1),
+    borderColor:'#ccc'
   },
   enterButton: {
     flex: 0.2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#333333',
-    color: 'white'
+    color: 'white',
+    borderWidth:hp(0.1),
+    borderColor:'#ccc',
+    marginRight: wp(0),
   },
   numberButton: {
     flex: 0.18,
-    height: 40,
-    width: 40,
+    height: hp(5),
+    width: hp(6),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#333333',
     color: 'white',
-    fontWeight:'100'
+    fontWeight:'100',
+    borderColor:'#ccc',
+    borderWidth:hp(0.1)
   },
   cancelButton: {
     flex: 0.2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#333333',
-    marginRight: 10
+    marginRight: 10,
+    borderWidth:hp(0.1),
+    borderColor:'#ccc',
+    marginLeft:wp(0.2)
   },
   errorMessageContainer: {
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: hp(0.1),
+    marginTop:hp(0.1)
   },
   errorMessageText: {
     color: '#FFFFFF',
-    fontSize: 20,
+    fontSize: fs(2),
     fontWeight:'100'
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: hp(0.5),
     justifyContent: 'space-between',
     paddingHorizontal: 5,
     backgroundColor: '#333333',
-    height: 50,
+    height: hp(6),
+    marginTop:hp(0.5),
+    borderWidth:hp(0.1),
+    borderColor:'#ccc'
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: fs(2.8),
     fontWeight: '100',
     marginLeft: 8,
     color: 'white'
@@ -542,8 +572,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imageQuestion: {
-    width: '100%',
-    height: '100%', // Adjust the height as needed
+    width: hp(40),
+    height: hp(40), // Adjust the height as needed
     resizeMode: 'cover',
     marginBottom: 10,
   },
@@ -554,11 +584,11 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
+    padding: hp(2.5),
+    borderRadius: hp(1.2),
     elevation: 5,
-    width: '80%', // Set the width to cover 80% of the screen
-    maxHeight: '80%', // Set the max height to cover 80% of the screen
+    width: wp(80), // Set the width to cover 80% of the screen
+    maxHeight: hp(100), // Set the max height to cover 80% of the screen
   },
   modalTitle: {
     fontSize: 18,
@@ -573,11 +603,13 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 10,
     alignItems: 'center',
+    borderWidth:hp(0.1),
+    borderColor:'#ccc'
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight:'100'
+    fontSize: fs(2),
+    fontWeight:'100',
   },
 });
 

@@ -1,7 +1,11 @@
 // SplashScreen.js
 
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet,Image } from 'react-native';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import {
+  responsiveFontSize as fs
+} from "react-native-responsive-dimensions";
 
 const Splashscreen = ({ navigation }) => {
   useEffect(() => {
@@ -14,7 +18,12 @@ const Splashscreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>RiddleX</Text>
+      <Image
+        source={require('../components/Math.png')}
+        style={styles.logo}
+      />
+      <Text style={styles.introText}>Welcome to RiddleX</Text>
+      {/* <Text style={styles.text}>RiddleX</Text> */}
       {/* You can add your app's logo or any other branding elements here */}
     </View>
   );
@@ -25,12 +34,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff', // Customize the background color
+    backgroundColor: '#333333', // Customize the background color
+  },
+  logo: {
+    width: hp(25), // Adjust the width as needed
+    height: hp(25), // Adjust the height as needed
+    resizeMode: 'contain', // Choose the resizeMode that fits your image
+    marginBottom:hp(2),
+    // borderWidth:hp(0.1),
+    // borderColor:'#FFFFFF'
   },
   text: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000', // Customize the text color
+    fontSize: fs(2.8),
+    fontWeight: '200',
+    color: '#FFFFFF', // Customize the text color
+  },
+  introText: {
+    fontSize: 20,
+    fontWeight: '200',
+    color: '#FFFFFF', // Customize the text color
+    textAlign: 'center', // Center the text
   },
 });
 

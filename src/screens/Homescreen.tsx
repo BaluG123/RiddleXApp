@@ -1,8 +1,12 @@
 // HomeScreen.js
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity,Image } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import {
+  responsiveFontSize as fs
+} from "react-native-responsive-dimensions";
 
 const Homescreen = ({ navigation }) => {
 
@@ -11,19 +15,20 @@ const Homescreen = ({ navigation }) => {
     navigation.navigate('LevelScreen');
   };
 
-
-
-
-
   return (
     <View style={styles.container}>
       {/* App Name */}
+      
+      <Image
+        source={require('../components/Math.png')}
+        style={styles.logo}
+      />
       <Text style={styles.appName}>RiddleX</Text>
 
       {/* Play icon */}
       <TouchableOpacity onPress={handleLevelsPress}>
         <View style={styles.playIconContainer}>
-          <Icon name="play-arrow" size={32} color="white" />
+          <Icon name="play-arrow" size={32} color="black" />
         </View>
       </TouchableOpacity>
 
@@ -47,24 +52,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#333333',
   },
   appName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
+    fontSize: fs(2.8),
+    fontWeight: '200',
+    marginBottom: hp(1),
     color: '#FFFFFF'
   },
   playIconContainer: {
-    backgroundColor: 'black', // Customize the background color
-    borderRadius: 64, // Half of the size for a circular shape
-    padding: 16,
-    marginBottom: 32,
+    backgroundColor: '#FFFFFF', // Customize the background color
+    borderRadius: hp(4), // Half of the size for a circular shape
+    padding: hp(2),
+    marginBottom: wp(3),
   },
   optionsContainer: {
     alignItems: 'center',
   },
   optionText: {
-    fontSize: 18,
-    marginVertical: 8,
-    color: '#FFFFFF', // Customize the text color
+    fontSize: fs(2.5),
+    marginVertical: hp(0.5),
+    color: '#FFFFFF',
+    fontWeight:'200',
+    // marginBottom:hp(10)
+  },
+  logo: {
+    width: hp(25), // Adjust the width as needed
+    height: hp(25), // Adjust the height as needed
+    resizeMode: 'contain', // Choose the resizeMode that fits your image
+    marginBottom:hp(2),
+    borderWidth:hp(0.1),
+    borderColor:'#FFFFFF'
   },
 });
 
