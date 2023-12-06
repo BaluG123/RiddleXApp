@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "332899979626",
+    "project_id": "riddlex-eccf4",
+    "storage_bucket": "riddlex-eccf4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:332899979626:android:65e2b2e423527f26fcd513",
+        "android_client_info": {
+          "package_name": "com.riddlex"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgwMvB8JsM8kX-mE_0VZh6hiiMRaoTZvs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

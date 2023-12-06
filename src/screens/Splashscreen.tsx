@@ -19,10 +19,10 @@ const Splashscreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../components/Math.png')}
+        source={require('../components/math.png')}
         style={styles.logo}
       />
-      <Text style={styles.introText}>Welcome to RiddleX</Text>
+      <Text style={styles.introText}>Welcome</Text>
       {/* <Text style={styles.text}>RiddleX</Text> */}
       {/* You can add your app's logo or any other branding elements here */}
     </View>
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   },
   introText: {
     fontSize: 20,
-    fontWeight: '200',
+    fontWeight: 'bold',
     color: '#FFFFFF', // Customize the text color
     textAlign: 'center', // Center the text
   },

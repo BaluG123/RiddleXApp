@@ -353,7 +353,7 @@ const Questionscreen = ({ route, navigation }) => {
         {/* 70% of the screen for the question */}
         {loading ? ( // Display ActivityIndicator while loading
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="red" />
+            <ActivityIndicator size="large" color="white" />
           </View>
         ) : (
           <View style={styles.questionContainer}>
