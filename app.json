@@ -1,4 +1,7 @@
 {
   "name": "RiddleX",
-  "displayName": "RiddleX"
+  "displayName": "RiddleX",
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-2627956667785383~2700987828"
+  }
 }

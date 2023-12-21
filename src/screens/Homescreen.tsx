@@ -1,7 +1,7 @@
 // HomeScreen.js
 
-import React, { useState,useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity,Image,Alert,BackHandler } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, BackHandler } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import {
@@ -10,8 +10,11 @@ import {
 import { Linking } from 'react-native';
 import SocialIcon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
 const Homescreen = ({ navigation }) => {
+
+  // const adUnitId2 = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/2707235997';
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
@@ -28,14 +31,24 @@ const Homescreen = ({ navigation }) => {
         'Exit App',
         'Are you sure you want to exit?',
         [
-          { text: 'Cancel', onPress: () => {}, style: 'cancel' },
+          { text: 'Cancel', onPress: () => { }, style: 'cancel' },
           { text: 'Exit', onPress: () => BackHandler.exitApp(), style: 'destructive', },
         ],
-        { cancelable: false,
+        {
+          cancelable: false,
           style: 'default', // Customize the Alert dialog style
           titleStyle: { fontSize: 24, fontWeight: 'bold' }, // Customize the title style
           messageStyle: { fontSize: 16 }, // Customize the message style
-      },
+          // customView: (
+          //   <View style={{alignSelf: 'center',marginVertical: 10,}}>
+          //     {/* Banner Ad Component */}
+          //     <BannerAd
+          //       unitId={adUnitId2}
+          //       size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+          //     />
+          //   </View>
+          // ),
+        },
       );
 
       // Return true to prevent default behavior (exit the app) only on the HomeScreen
@@ -53,8 +66,8 @@ const Homescreen = ({ navigation }) => {
   const handleSocialMediaClick = (socialMedia) => {
     // Define social media URLs
     const socialMediaUrls = {
-      instagram: 'https://www.instagram.com/_balu__g',
-      twitter: 'https://twitter.com/@balug_',
+      instagram: 'https://www.instagram.com/math.riddles_x',
+      twitter: 'https://twitter.com/WebDeveloper20',
       // Add other social media URLs as needed
     };
 
@@ -76,7 +89,7 @@ const Homescreen = ({ navigation }) => {
       [
         {
           text: 'Cancel',
-          onPress: () => {},
+          onPress: () => { },
           style: 'cancel',
         },
         {
@@ -98,78 +111,75 @@ const Homescreen = ({ navigation }) => {
     );
   };
 
+  const adUnitId = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/8571195943';
+
+
   return (
     <View style={styles.container}>
-      {/* App Name */}
-      
-      {/* <Image
-        source={require('../components/math.png')}
-        style={styles.logo}
-      /> */}
-      <Text style={styles.appName}>Math Riddles</Text>
 
-      {/* Play icon */}
+      <Text style={styles.appName}>Math Riddles</Text>
       <TouchableOpacity onPress={handleLevelsPress}>
         <View style={styles.playIconContainer}>
           <Icon name="play-arrow" size={32} color="black" />
         </View>
       </TouchableOpacity>
-
-      {/* Other options */}
-      {/* <View style={styles.optionsContainer}> */}
-        <Text style={styles.optionText} onPress={handleLevelsPress}>
-          Levels
+      <Text style={styles.optionText} onPress={handleLevelsPress}>
+        Levels
+      </Text>
+      <Text style={{ color: 'white', fontSize: fs(2.5), fontWeight: 200 }}>Follow Us</Text>
+      <View style={styles.socialMediaRow}>
+        <SocialIcon
+          name="instagram"
+          size={24}
+          color="#FFFFFF"
+          style={styles.socialMediaIcon}
+          onPress={() => handleSocialMediaClick('instagram')}
+        />
+        <Text style={styles.socialMediaText} onPress={() => handleSocialMediaClick('instagram')}>
+          Instagram
         </Text>
-        {/* <Text style={styles.optionText}>Follow Us</Text> */}
-        <Text style={{color:'white',fontSize:fs(2.5),fontWeight:200}}>Follow Us</Text>
-        <View style={styles.socialMediaRow}>
-          <SocialIcon
-            name="instagram"
-            size={24}
-            color="#FFFFFF"
-            style={styles.socialMediaIcon}
-            onPress={() => handleSocialMediaClick('instagram')}
-          />
-          <Text style={styles.socialMediaText} onPress={() => handleSocialMediaClick('instagram')}>
-            Instagram
-          </Text>
-        </View>
-        {/* Twitter */}
-        <View style={styles.socialMediaRow}>
-          <SocialIcon
-            name="twitter"
-            size={24}
-            color="#FFFFFF"
-            style={styles.socialMediaIcon}
-            onPress={() => handleSocialMediaClick('twitter')}
-          />
-          <Text style={styles.socialMediaText} onPress={() => handleSocialMediaClick('twitter')}>
-            Twitter
-          </Text>
-        </View>
-        <View style={styles.socialMediaRow}>
-          <Icon
-            name="restart-alt"
-            size={24}
-            color="#FFFFFF"
-            style={styles.socialMediaIcon}
-            onPress={() => handleSocialMediaClick('twitter')}
-          />
+      </View>
+      {/* Twitter */}
+      <View style={styles.socialMediaRow}>
+        <SocialIcon
+          name="twitter"
+          size={24}
+          color="#FFFFFF"
+          style={styles.socialMediaIcon}
+          onPress={() => handleSocialMediaClick('twitter')}
+        />
+        <Text style={styles.socialMediaText} onPress={() => handleSocialMediaClick('twitter')}>
+          Twitter
+        </Text>
+      </View>
+      <View style={styles.socialMediaRow}>
+        <Icon
+          name="restart-alt"
+          size={24}
+          color="#FFFFFF"
+          style={styles.socialMediaIcon}
+          onPress={() => handleSocialMediaClick('twitter')}
+        />
         <Text style={styles.clearDataText} onPress={handleClearDataClick}>
           Restart
         </Text>
-        </View>
-        <View style={styles.socialMediaRow}>
-          <Icon
-            name="cancel"
-            size={24}
-            color="#FFFFFF"
-            style={styles.socialMediaIcon}
-            onPress={() => handleSocialMediaClick('twitter')}
-          />
+      </View>
+      <View style={styles.socialMediaRow}>
+        <Icon
+          name="cancel"
+          size={24}
+          color="#FFFFFF"
+          style={styles.socialMediaIcon}
+          onPress={() => handleSocialMediaClick('twitter')}
+        />
         <Text style={styles.optionText} onPress={handleBackPress}>Exit</Text>
-        </View>
-      {/* </View> */}
+      </View>
+      <View style={{ position: 'absolute', bottom: 0, width: '100%' }}>
+        <BannerAd
+          unitId={adUnitId}
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+        />
+      </View>
     </View>
   );
 };
@@ -201,16 +211,16 @@ const styles = StyleSheet.create({
     fontSize: fs(2.5),
     marginVertical: hp(0.5),
     color: '#FFFFFF',
-    fontWeight:'200',
+    fontWeight: '200',
     // marginBottom:hp(10)
   },
   logo: {
     width: hp(32), // Adjust the width as needed
     height: hp(32), // Adjust the height as needed
     resizeMode: 'contain', // Choose the resizeMode that fits your image
-    marginBottom:hp(2),
-    borderWidth:hp(0.1),
-    borderColor:'#FFFFFF'
+    marginBottom: hp(2),
+    borderWidth: hp(0.1),
+    borderColor: '#FFFFFF'
   },
   socialMediaRow: {
     flexDirection: 'row',

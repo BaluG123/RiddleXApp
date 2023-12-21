@@ -211,6 +211,27 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-nat
 import {
   responsiveFontSize as fs
 } from "react-native-responsive-dimensions";
+import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
+import { RewardedInterstitialAd } from 'react-native-google-mobile-ads'; //reward intertetial
+
+const adUnitId = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-2627956667785383/1872666477';
+
+const rewarded = RewardedAd.createForAdRequest(adUnitId, {
+  keywords: ['fashion', 'clothing', 'Menswear', 'Womenswear', 'Streetwear'],
+});
+
+// const adUnitId2 = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy';
+
+// rewarded ads for solution
+// const rewarded2 = RewardedAd.createForAdRequest(adUnitId2, {
+//   keywords: ['fashion', 'clothing'],
+// });
+
+const adUnitId2 = __DEV__ ? TestIds.REWARDED_INTERSTITIAL : 'ca-app-pub-2627956667785383/6921813171';
+
+const rewardedInterstitial = RewardedInterstitialAd.createForAdRequest(adUnitId2, {
+  keywords: ['fashion', 'clothing', 'Menswear', 'Womenswear', 'Streetwear'],
+});
 
 
 const Questionscreen = ({ route, navigation }) => {
@@ -222,16 +243,18 @@ const Questionscreen = ({ route, navigation }) => {
   const [soundOn, setSoundOn] = useState(true);
   const [loading, setLoading] = useState(true);
   const [isImageQuestion, setIsImageQuestion] = useState(false);
-
-  // State for modal
   const [modalVisible, setModalVisible] = useState(false);
   const [hmodalVisible, setHmodalVisible] = useState(false)
   const [hint, setHint] = useState('');
   const [solution, setSolution] = useState('');
+  const [watchAdForHintModalVisible, setWatchAdForHintModalVisible] = useState(false);
+  const [watchAdForSolutionModalVisible, setWatchAdForSolutionModalVisible] = useState(false);
+  // const [loaded, setLoaded] = useState(false);
+  const [isAdLoaded, setIsAdLoaded] = useState(false);
 
   useEffect(() => {
     // Fetch the question for the selected level from your API
-    fetch(`http://riddlexapi.pythonanywhere.com/api/levels/${levelNumber}/`)
+    fetch(`https://riddlexapi.pythonanywhere.com/api/levels/${levelNumber}/`)
       .then((response) => response.json())
       .then((data) => {
         if (data.image_question) {
@@ -249,6 +272,80 @@ const Questionscreen = ({ route, navigation }) => {
       .catch((error) => console.error('Error fetching data:', error));
     setLoading(false);
   }, [levelNumber]);
+
+  useEffect(() => {
+    const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
+      // setLoaded(true);
+      setIsAdLoaded(true);
+    });
+    const unsubscribeEarned = rewarded.addAdEventListener(
+      RewardedAdEventType.EARNED_REWARD,
+      reward => {
+        console.log('User earned reward of ', reward);
+      },
+    );
+
+    // Start loading the rewarded ad straight away
+    rewarded.load();
+
+    // Unsubscribe from events on unmount
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeEarned();
+    };
+  }, []);
+
+
+  // rearded ads for solution
+  // useEffect(() => {
+  //   const unsubscribeLoaded = rewarded2.addAdEventListener(RewardedAdEventType.LOADED, () => {
+  //     setLoaded(true);
+  //   });
+  //   const unsubscribeEarned = rewarded2.addAdEventListener(
+  //     RewardedAdEventType.EARNED_REWARD,
+  //     reward => {
+  //       console.log('User earned reward of ', reward);
+  //     },
+  //   );
+
+  //   // Start loading the rewarded ad straight away
+  //   rewarded2.load();
+
+  //   // Unsubscribe from events on unmount
+  //   return () => {
+  //     unsubscribeLoaded();
+  //     unsubscribeEarned();
+  //   };
+  // }, []);
+
+  useEffect(() => {
+    const unsubscribeLoaded = rewardedInterstitial.addAdEventListener(
+      RewardedAdEventType.LOADED,
+      () => {
+        setIsAdLoaded(true);
+        // setLoaded(true);
+      },
+    );
+    const unsubscribeEarned = rewardedInterstitial.addAdEventListener(
+      RewardedAdEventType.EARNED_REWARD,
+      reward => {
+        console.log('User earned reward of ', reward);
+      },
+    );
+
+    // Start loading the rewarded interstitial ad straight away
+    rewardedInterstitial.load();
+
+    // Unsubscribe from events on unmount
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeEarned();
+    };
+  }, []);
+
+  // if (!loaded) {
+  //   return null;
+  // }
 
   const handleNumberPress = (number) => {
     setInputValue((prevValue) => prevValue + number.toString());
@@ -335,6 +432,34 @@ const Questionscreen = ({ route, navigation }) => {
     setSoundOn((prev) => !prev);
   };
 
+  const handleWatchAdForHint = () => {
+    // Add logic to show ad for hint
+    // For example, you can use a library like react-native-admob to show ads
+    if (isAdLoaded) {
+      rewarded.show();
+    } else {
+      // Handle the scenario where the ad is not loaded
+      Alert.alert("No Ad Available", "No ads are available at the moment. Please try again later.");
+    }
+    // After the ad is watched, you can set the state to show the hint modal
+    setWatchAdForHintModalVisible(false);
+    setHmodalVisible(true);
+  };
+
+  const handleWatchAdForSolution = () => {
+    // Add logic to show ad for solution
+    // For example, you can use a library like react-native-admob to show ads 
+    if (isAdLoaded) {
+      rewardedInterstitial.show();
+    } else {
+      // Handle the scenario where the ad is not loaded
+      Alert.alert("No Ad Available", "Currently, there is no ad available. Please try again later.");
+    }
+    // After the ad is watched, you can set the state to show the solution modal
+    setWatchAdForSolutionModalVisible(false);
+    setModalVisible(true);
+  };
+
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -351,13 +476,12 @@ const Questionscreen = ({ route, navigation }) => {
           </TouchableOpacity>
         </View>
         {/* 70% of the screen for the question */}
-        {loading ? ( // Display ActivityIndicator while loading
+        {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="white" />
+            <ActivityIndicator size="large" color="#FFFFFF" />
           </View>
         ) : (
           <View style={styles.questionContainer}>
-            {/* <Text style={styles.question}>{question}</Text> */}
             {isImageQuestion ? (
               <Image source={{ uri: question }} style={styles.imageQuestion} />
             ) : (
@@ -373,16 +497,15 @@ const Questionscreen = ({ route, navigation }) => {
 
         {/* 30% of the screen with three rows */}
         <View style={styles.inputContainer}>
-          {/* First row for input, small button, and enter button */}
           <View style={styles.row}>
             <TextInput style={styles.input} placeholder="Answer" editable={false} value={inputValue} pointerEvents="none" placeholderTextColor="#FFFFFF" />
             <TouchableOpacity style={styles.cancelButton} onPress={handleCancelPress}>
               <MaterialIcons name="cancel" size={24} color="white" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.smallButton} onPress={htoggleModal} >
+            <TouchableOpacity style={styles.smallButton} onPress={() => setWatchAdForHintModalVisible(true)} >
               <MaterialIcons name="help-outline" size={24} color="#FFFFFF" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.smallButton} onPress={toggleModal}>
+            <TouchableOpacity style={styles.smallButton} onPress={() => setWatchAdForSolutionModalVisible(true)}>
               <MaterialIcons name="lightbulb" size={24} color="white" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.enterButton} onPress={handleSubmit}>
@@ -390,7 +513,6 @@ const Questionscreen = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* Remaining 2 rows for numbers */}
           <View style={styles.row}>
             {[1, 2, 3, 4, 5].map((number) => (
               <TouchableOpacity key={number} style={styles.numberButton} onPress={() => handleNumberPress(number)}>
@@ -418,12 +540,8 @@ const Questionscreen = ({ route, navigation }) => {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              {/* <Text style={{ color: 'black', marginLeft: '30%' }}>Need Help ?</Text> */}
               <Text style={styles.modalTitle}>Hint</Text>
               <Text style={{ color: 'black', marginBottom: 5 }}>{hint}</Text>
-              {/* <Text style={styles.modalTitle}>Solution</Text> */}
-              {/* <Text style={{ color: 'black', marginBottom: 10 }}>{solution}</Text> */}
-              {/* <Button title="got it thanks !" onPress={htoggleModal} /> */}
               <TouchableOpacity onPress={htoggleModal} style={styles.gotItButton}>
                 <Text style={styles.buttonText}>Got it. Close!</Text>
               </TouchableOpacity>
@@ -441,14 +559,54 @@ const Questionscreen = ({ route, navigation }) => {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              {/* <Text style={{ color: 'black', marginLeft: '30%' }}>Need Help ?</Text> */}
-              {/* <Text style={styles.modalTitle}>Hint</Text> */}
-              {/* <Text style={{color:'black',marginBottom:5}}>{hint}</Text> */}
               <Text style={styles.modalTitle}>Solution</Text>
               <Text style={{ color: 'black', marginBottom: 10 }}>{solution}</Text>
-              {/* <Button title="got it thanks !" onPress={toggleModal} /> */}
               <TouchableOpacity onPress={toggleModal} style={styles.gotItButton}>
                 <Text style={styles.buttonText}>Got it. Close!</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Watch Ad for Hint Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={watchAdForHintModalVisible}
+          onRequestClose={() => setWatchAdForHintModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Watch Ad for Hint</Text>
+              {/* Add ad content and watch button */}
+              <TouchableOpacity onPress={handleWatchAdForHint} style={styles.gotItButton}>
+                <Text style={styles.buttonText}>Watch Ad</Text>
+              </TouchableOpacity>
+              {/* Add a cancel button or other options */}
+              <TouchableOpacity onPress={() => setWatchAdForHintModalVisible(false)} style={styles.gotItButton}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Watch Ad for Solution Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={watchAdForSolutionModalVisible}
+          onRequestClose={() => setWatchAdForSolutionModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Watch Ad for Solution</Text>
+              {/* Add ad content and watch button */}
+              <TouchableOpacity onPress={handleWatchAdForSolution} style={styles.gotItButton}>
+                <Text style={styles.buttonText}>Watch Ad</Text>
+              </TouchableOpacity>
+              {/* Add a cancel button or other options */}
+              <TouchableOpacity onPress={() => setWatchAdForSolutionModalVisible(false)} style={styles.gotItButton}>
+                <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -469,8 +627,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#333333',
-    borderWidth:hp(0.1),
-    borderColor:'#ccc'
+    borderWidth: hp(0.1),
+    borderColor: '#ccc'
   },
   question: {
     fontSize: fs(3.6),
@@ -493,9 +651,9 @@ const styles = StyleSheet.create({
     padding: wp(2),
     color: '#FFFFFF',
     width: wp(1),
-    borderWidth:hp(0.1),
-    backgroundColor:'#333333',
-    borderColor:'#ccc'
+    borderWidth: hp(0.1),
+    backgroundColor: '#333333',
+    borderColor: '#ccc'
   },
   smallButton: {
     flex: 0.2,
@@ -503,8 +661,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#333333',
     marginRight: wp(1),
-    borderWidth:hp(0.1),
-    borderColor:'#ccc'
+    borderWidth: hp(0.1),
+    borderColor: '#ccc'
   },
   enterButton: {
     flex: 0.2,
@@ -512,8 +670,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#333333',
     color: 'white',
-    borderWidth:hp(0.1),
-    borderColor:'#ccc',
+    borderWidth: hp(0.1),
+    borderColor: '#ccc',
     marginRight: wp(0),
   },
   numberButton: {
@@ -524,9 +682,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#333333',
     color: 'white',
-    fontWeight:'100',
-    borderColor:'#ccc',
-    borderWidth:hp(0.1)
+    fontWeight: '100',
+    borderColor: '#ccc',
+    borderWidth: hp(0.1)
   },
   cancelButton: {
     flex: 0.2,
@@ -534,19 +692,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#333333',
     marginRight: 10,
-    borderWidth:hp(0.1),
-    borderColor:'#ccc',
-    marginLeft:wp(0.2)
+    borderWidth: hp(0.1),
+    borderColor: '#ccc',
+    marginLeft: wp(0.2)
   },
   errorMessageContainer: {
     alignItems: 'center',
     marginBottom: hp(0.1),
-    marginTop:hp(0.1)
+    marginTop: hp(0.1)
   },
   errorMessageText: {
     color: '#FFFFFF',
     fontSize: fs(2),
-    fontWeight:'100'
+    fontWeight: '100'
   },
   header: {
     flexDirection: 'row',
@@ -556,9 +714,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     backgroundColor: '#333333',
     height: hp(6),
-    marginTop:hp(0.5),
-    borderWidth:hp(0.1),
-    borderColor:'#ccc'
+    marginTop: hp(0.5),
+    borderWidth: hp(0.1),
+    borderColor: '#ccc'
   },
   headerTitle: {
     fontSize: fs(2.8),
@@ -603,13 +761,13 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginTop: 10,
     alignItems: 'center',
-    borderWidth:hp(0.1),
-    borderColor:'#ccc'
+    borderWidth: hp(0.1),
+    borderColor: '#ccc'
   },
   buttonText: {
     color: '#FFFFFF',
     fontSize: fs(2),
-    fontWeight:'100',
+    fontWeight: '100',
   },
 });
 
