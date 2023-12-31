@@ -214,7 +214,10 @@ import {
 import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 import { RewardedInterstitialAd } from 'react-native-google-mobile-ads'; //reward intertetial
 
-const adUnitId = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-2627956667785383/1872666477';
+// const adUnitId = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-2627956667785383/1872666477';
+
+const adUnitId = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-2627956667785383/7537611023';
+
 
 const rewarded = RewardedAd.createForAdRequest(adUnitId, {
   keywords: ['fashion', 'clothing', 'Menswear', 'Womenswear', 'Streetwear'],
