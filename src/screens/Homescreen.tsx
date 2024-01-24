@@ -111,7 +111,7 @@ const Homescreen = ({ navigation }) => {
     );
   };
 
-  const adUnitId = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/5182599362';
+  const adUnitId = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/8571195943';
 
 
   return (

@@ -216,7 +216,7 @@ import { RewardedInterstitialAd } from 'react-native-google-mobile-ads'; //rewar
 
 // const adUnitId = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-2627956667785383/1872666477';
 
-const adUnitId = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-2627956667785383/7537611023';
+const adUnitId = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-2627956667785383/1872666477';
 
 
 const rewarded = RewardedAd.createForAdRequest(adUnitId, {
@@ -277,6 +277,15 @@ const Questionscreen = ({ route, navigation }) => {
   }, [levelNumber]);
 
   useEffect(() => {
+    const adLoadTimeout = setTimeout(() => {
+      if (!isAdLoaded) {
+        // Handle the scenario where the ad did not load within the specified time
+        console.log("Ad load timeout");
+        Alert.alert("Ad Load Error", "Failed to load the rewarded ad. Please try again later.");
+        setIsAdLoaded(true); // Set isAdLoaded to true to prevent further attempts
+      }
+    }, 4000); // Set a timeout of 5 seconds (you can adjust the time as needed)
+
     const unsubscribeLoaded = rewarded.addAdEventListener(RewardedAdEventType.LOADED, () => {
       // setLoaded(true);
       setIsAdLoaded(true);
@@ -291,37 +300,27 @@ const Questionscreen = ({ route, navigation }) => {
     // Start loading the rewarded ad straight away
     rewarded.load();
 
+
     // Unsubscribe from events on unmount
     return () => {
+      clearTimeout(adLoadTimeout);
       unsubscribeLoaded();
       unsubscribeEarned();
     };
   }, []);
 
 
-  // rearded ads for solution
-  // useEffect(() => {
-  //   const unsubscribeLoaded = rewarded2.addAdEventListener(RewardedAdEventType.LOADED, () => {
-  //     setLoaded(true);
-  //   });
-  //   const unsubscribeEarned = rewarded2.addAdEventListener(
-  //     RewardedAdEventType.EARNED_REWARD,
-  //     reward => {
-  //       console.log('User earned reward of ', reward);
-  //     },
-  //   );
 
-  //   // Start loading the rewarded ad straight away
-  //   rewarded2.load();
-
-  //   // Unsubscribe from events on unmount
-  //   return () => {
-  //     unsubscribeLoaded();
-  //     unsubscribeEarned();
-  //   };
-  // }, []);
 
   useEffect(() => {
+    const adLoadTimeout = setTimeout(() => {
+      if (!isAdLoaded) {
+        // Handle the scenario where the ad did not load within the specified time
+        console.log("Ad load timeout");
+        Alert.alert("Ad Load Error", "Failed to load the rewarded ad. Please try again later.");
+        setIsAdLoaded(true); // Set isAdLoaded to true to prevent further attempts
+      }
+    }, 4000); // Set a timeout of 5 seconds (you can adjust the time as needed)
     const unsubscribeLoaded = rewardedInterstitial.addAdEventListener(
       RewardedAdEventType.LOADED,
       () => {
@@ -341,6 +340,7 @@ const Questionscreen = ({ route, navigation }) => {
 
     // Unsubscribe from events on unmount
     return () => {
+      clearTimeout(adLoadTimeout);
       unsubscribeLoaded();
       unsubscribeEarned();
     };
@@ -436,8 +436,6 @@ const Questionscreen = ({ route, navigation }) => {
   };
 
   const handleWatchAdForHint = () => {
-    // Add logic to show ad for hint
-    // For example, you can use a library like react-native-admob to show ads
     if (isAdLoaded) {
       rewarded.show();
     } else {
