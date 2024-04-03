@@ -213,10 +213,13 @@ import {
 } from "react-native-responsive-dimensions";
 import { RewardedAd, RewardedAdEventType, TestIds } from 'react-native-google-mobile-ads';
 import { RewardedInterstitialAd } from 'react-native-google-mobile-ads'; //reward intertetial
+import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
+
 
 // const adUnitId = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-2627956667785383/1872666477';
 
 const adUnitId = __DEV__ ? TestIds.REWARDED : 'ca-app-pub-2627956667785383/1872666477';
+
 
 
 const rewarded = RewardedAd.createForAdRequest(adUnitId, {
@@ -281,7 +284,7 @@ const Questionscreen = ({ route, navigation }) => {
       if (!isAdLoaded) {
         // Handle the scenario where the ad did not load within the specified time
         console.log("Ad load timeout");
-        Alert.alert("Ad Load Error", "Failed to load the rewarded ad. Please try again later.");
+        // Alert.alert("Ad Load Error", "Failed to load the rewarded ad. Please try again later.");
         setIsAdLoaded(true); // Set isAdLoaded to true to prevent further attempts
       }
     }, 4000); // Set a timeout of 5 seconds (you can adjust the time as needed)
@@ -310,14 +313,12 @@ const Questionscreen = ({ route, navigation }) => {
   }, []);
 
 
-
-
   useEffect(() => {
     const adLoadTimeout = setTimeout(() => {
       if (!isAdLoaded) {
         // Handle the scenario where the ad did not load within the specified time
         console.log("Ad load timeout");
-        Alert.alert("Ad Load Error", "Failed to load the rewarded ad. Please try again later.");
+        // Alert.alert("Ad Load Error", "Failed to load the rewarded ad. Please try again later.");
         setIsAdLoaded(true); // Set isAdLoaded to true to prevent further attempts
       }
     }, 4000); // Set a timeout of 5 seconds (you can adjust the time as needed)
@@ -346,9 +347,6 @@ const Questionscreen = ({ route, navigation }) => {
     };
   }, []);
 
-  // if (!loaded) {
-  //   return null;
-  // }
 
   const handleNumberPress = (number) => {
     setInputValue((prevValue) => prevValue + number.toString());
@@ -435,32 +433,44 @@ const Questionscreen = ({ route, navigation }) => {
     setSoundOn((prev) => !prev);
   };
 
-  const handleWatchAdForHint = () => {
-    if (isAdLoaded) {
+  const handleWatchAdForHint = async() => {
+    try{
+        if (isAdLoaded) {
       rewarded.show();
     } else {
       // Handle the scenario where the ad is not loaded
+      await rewarded.load();
       Alert.alert("No Ad Available", "No ads are available at the moment. Please try again later.");
     }
-    // After the ad is watched, you can set the state to show the hint modal
     setWatchAdForHintModalVisible(false);
     setHmodalVisible(true);
+  }catch (error) {
+      console.error("An error occurred:", error);
+      Alert.alert("Error", "An unexpected error occurred. Please try again or check your internet connection.");
   };
+  }
 
-  const handleWatchAdForSolution = () => {
+
+  const handleWatchAdForSolution = async() => {
     // Add logic to show ad for solution
     // For example, you can use a library like react-native-admob to show ads 
-    if (isAdLoaded) {
-      rewardedInterstitial.show();
-    } else {
-      // Handle the scenario where the ad is not loaded
-      Alert.alert("No Ad Available", "Currently, there is no ad available. Please try again later.");
-    }
-    // After the ad is watched, you can set the state to show the solution modal
-    setWatchAdForSolutionModalVisible(false);
-    setModalVisible(true);
-  };
+    try{
+      if (isAdLoaded) {
+        rewardedInterstitial.show();
+      } else {
+        // Handle the scenario where the ad is not loaded
+        await rewardedInterstitial.load();
+        Alert.alert("No Ad Available", "Currently, there is no ad available. Please try again later.");
+      }
+      // After the ad is watched, you can set the state to show the solution modal
+      setWatchAdForSolutionModalVisible(false);
+      setModalVisible(true);
+    }catch (error) {
+      console.error("An error occurred:", error);
+      Alert.alert("Error", "An unexpected error occurred. Please try again or check your internet connection.");
 
+  };
+}
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

@@ -7,6 +7,8 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-nat
 import {
   responsiveFontSize as fs
 } from "react-native-responsive-dimensions";
+import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+
 
 
 const SuccessScreen = ({ navigation, route }) => {
@@ -37,8 +39,18 @@ const SuccessScreen = ({ navigation, route }) => {
     navigation.navigate('QuestionScreen', { levelNumber: levelNumber + 1 });
   };
 
+  const adUnitId = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/7509768784';
+  const adUnitId2 = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/2801836195';
+
+ 
   return (
     <View style={styles.container}>
+      <View style={{ position: 'absolute', top: 0, width: '100%' }}>
+        <BannerAd
+          unitId={adUnitId2}
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+        />
+      </View>
       <MaterialIcons name="check-circle" size={100} color="green" style={styles.icon} />
       <Text style={styles.successText}>Correct!</Text>
       <Text style={styles.nextLevelText}>Congratulations! Move on to the next level.</Text>
@@ -46,6 +58,12 @@ const SuccessScreen = ({ navigation, route }) => {
         <MaterialIcons name="play-circle-filled" size={24} color="white" />
         <Text style={styles.buttonText}>Next Level</Text>
       </TouchableOpacity>
+      <View style={{ position: 'absolute', bottom: 0, width: '100%' }}>
+        <BannerAd
+          unitId={adUnitId}
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+        />
+      </View>
     </View>
   );
 };

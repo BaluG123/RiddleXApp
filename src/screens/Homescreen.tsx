@@ -11,8 +11,10 @@ import { Linking } from 'react-native';
 import SocialIcon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import VersionCheck from 'react-native-version-check';
 
 const Homescreen = ({ navigation }) => {
+  const [showUpdateMessage, setShowUpdateMessage] = useState(false);
 
   // const adUnitId2 = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/2707235997';
 
@@ -23,6 +25,27 @@ const Homescreen = ({ navigation }) => {
       backHandler.remove();
     };
   }, []);
+
+  const handleOtherAppClick = (appUrl) => {
+    Linking.openURL(appUrl);
+  };
+
+  const checkAppVersion = async () => {
+    try {
+      const latestVersion = await VersionCheck.getLatestVersion({
+        provider: 'playStore', // Specify 'playStore' for Android
+      });
+
+      const currentVersion = await VersionCheck.getCurrentVersion();
+
+      if (latestVersion > currentVersion) {
+        // Show update message or popup
+        setShowUpdateMessage(true);
+      }
+    } catch (error) {
+      console.error('Error checking app version:', error);
+    }
+  };
 
   const handleBackPress = () => {
     // Check if the current route is the HomeScreen
@@ -39,15 +62,6 @@ const Homescreen = ({ navigation }) => {
           style: 'default', // Customize the Alert dialog style
           titleStyle: { fontSize: 24, fontWeight: 'bold' }, // Customize the title style
           messageStyle: { fontSize: 16 }, // Customize the message style
-          // customView: (
-          //   <View style={{alignSelf: 'center',marginVertical: 10,}}>
-          //     {/* Banner Ad Component */}
-          //     <BannerAd
-          //       unitId={adUnitId2}
-          //       size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-          //     />
-          //   </View>
-          // ),
         },
       );
 
@@ -110,6 +124,24 @@ const Homescreen = ({ navigation }) => {
       { cancelable: false }
     );
   };
+
+  {showUpdateMessage && (
+    <View>
+      <Text>New update available! Update now for the latest features.</Text>
+      <TouchableOpacity
+        onPress={() => {
+          // Open Play Store for the update
+          VersionCheck.openAppStore({
+            appName: 'Math Riddles',
+            appStoreCountry: 'IN',
+          });
+        }}
+      >
+        <Text>Update Now</Text>
+      </TouchableOpacity>
+    </View>
+  )}
+
 
   const adUnitId = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/8571195943';
 
@@ -174,6 +206,9 @@ const Homescreen = ({ navigation }) => {
         />
         <Text style={styles.optionText} onPress={handleBackPress}>Exit</Text>
       </View>
+      <TouchableOpacity style={styles.otherAppContainer} onPress={() => handleOtherAppClick('https://play.google.com/store/apps/details?id=com.gymexercises')}>
+        <Text style={styles.otherAppText}>Other Apps</Text>
+      </TouchableOpacity>
       <View style={{ position: 'absolute', bottom: 0, width: '100%' }}>
         <BannerAd
           unitId={adUnitId}
@@ -240,6 +275,16 @@ const styles = StyleSheet.create({
     marginVertical: hp(0.5),
     color: '#FFFFFF', // Red color for emphasis
     fontWeight: '200',
+  },
+  otherAppContainer: {
+    marginTop: hp(1.5),
+    alignItems: 'center',
+  },
+  otherAppText: {
+    fontSize: fs(2.5),
+    color: '#FFFFFF',
+    fontWeight: '200',
+    textDecorationLine: 'underline', // Add underline for better visibility
   },
 });
 
