@@ -446,7 +446,8 @@ const Questionscreen = ({ route, navigation }) => {
     setHmodalVisible(true);
   }catch (error) {
       console.error("An error occurred:", error);
-      Alert.alert("Error", "An unexpected error occurred. Please try again or check your internet connection.");
+      // Alert.alert("Error", "An unexpected error occurred. Please try again or check your internet connection.");
+      Alert.alert("No Ad Available", "No ads are available at the moment. Please try again later.");
   };
   }
 
@@ -467,7 +468,8 @@ const Questionscreen = ({ route, navigation }) => {
       setModalVisible(true);
     }catch (error) {
       console.error("An error occurred:", error);
-      Alert.alert("Error", "An unexpected error occurred. Please try again or check your internet connection.");
+      // Alert.alert("Error", "An unexpected error occurred. Please try again or check your internet connection.");
+      Alert.alert("No Ad Available", "No ads are available at the moment. Please try again later.");
 
   };
 }
