@@ -19,7 +19,7 @@ const Splashscreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../components/math.png')}
+        source={require('../components/Math.png')}
         style={styles.logo}
       />
       <Text style={styles.introText}>Welcome</Text>
