@@ -99,6 +99,9 @@ import MeasurementScreen from './src/screens/MeasurementScreen';
 import AlgebraScreen from './src/screens/AlgebraScreen';
 import NumberPatternsScreen from './src/screens/NumberPatternsScreen';
 import MoneyMathScreen from './src/screens/MoneyMathScreen';
+import EquationsScreen from './src/screens/EquationsScreen';
+import ProbabilityScreen from './src/screens/ProbabilityScreen';
+import RootsScreen from './src/screens/RootsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -180,6 +183,9 @@ async function subscribeToTopic(topic) {
         <Stack.Screen name="AlgebraScreen" component={AlgebraScreen} />
         <Stack.Screen name="NumberPatternsScreen" component={NumberPatternsScreen} />
         <Stack.Screen name="MoneyMathScreen" component={MoneyMathScreen} />
+        <Stack.Screen name="EquationsScreen" component={EquationsScreen} />
+        <Stack.Screen name="ProbabilityScreen" component={ProbabilityScreen} />
+        <Stack.Screen name="RootsScreen" component={RootsScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
