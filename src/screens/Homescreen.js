@@ -51,7 +51,19 @@ const Homescreen = ({ navigation }) => {
     { title: "Division", icon: "divide", color: "#FFEEAD", navigate: 'DivisionScreen' },
     { title: "Mixed", icon: "random", color: "#D4A5A5", navigate: 'MixedScreen' },
     { title: "Time Challenge", icon: "stopwatch", color: "#FF9F68", navigate: 'TimeChallengeScreen' },
-    { title: "Statistics", icon: "chart-bar", color: "#A8D8EA", navigate: 'StatisticsScreen' }
+    { title: "Geometry", icon: "shapes", color: "#8E44AD", navigate: 'GeometryScreen    ' },
+    { title: "Fractions", icon: "pizza-slice", color: "#F1C40F", navigate: 'FractionScreen' },
+    { title: "Exponents", icon: "superscript", color: "#E67E22", navigate: 'ExponentScreen' },
+    { title: "Word Problems", icon: "comment-dots", color: "#7F8C8D", navigate: 'WordProblemsScreen' },
+    { title: "Logic Puzzles", icon: "puzzle-piece", color: "#D35400", navigate: 'LogicPuzzlesScreen' },
+    { title: "Measurement", icon: "ruler-combined", color: "#2ECC71", navigate: 'MeasurementScreen' },
+    { title: "Algebra Basics", icon: "cube", color: "#9B59B6", navigate: 'AlgebraScreen' },
+    { title: "Number Patterns", icon: "wave-square", color: "#1ABC9C", navigate: 'PatternsScreen' },
+    { title: "Money Math", icon: "coins", color: "#27AE60", navigate: 'MoneyMathScreen' },
+    { title: "Equations", icon: "balance-scale", color: "#2980B9", navigate: 'EquationsScreen' },
+    { title: "Probability", icon: "dice", color: "#C0392B", navigate: 'ProbabilityScreen' },
+    { title: "Roots", icon: "square-root-alt", color: "#E74C3C", navigate: 'RootsScreen' },
+    { title: "Statistics", icon: "chart-bar", color: "#A8D8EA", navigate: 'StatisticsScreen' },
   ];
 
   const MathSection = ({ title, icon, color, onPress }) => (

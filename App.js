@@ -90,6 +90,9 @@ import AdditionScreen from './src/screens/AdditionScreen';
 import SubtractionScreen from './src/screens/SubtractionScreen';
 import MultiplicationScreen from './src/screens/MultiplicationScreen';
 import DivisionScreen from './src/screens/DivisionScreen';
+import GeometryScreen from './src/screens/GeometryScreen';
+import FractionScreen from './src/screens/FractionScreen';
+import ExponentScreen from './src/screens/ExponentScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -162,6 +165,9 @@ async function subscribeToTopic(topic) {
         <Stack.Screen name="SubtractionScreen" component={SubtractionScreen}/>
         <Stack.Screen name="MultiplicationScreen" component={MultiplicationScreen} />
         <Stack.Screen name="DivisionScreen" component={DivisionScreen} />
+        <Stack.Screen name="GeometryScreen" component={GeometryScreen} />
+        <Stack.Screen name="FractionScreen" component={FractionScreen} />
+        <Stack.Screen name="ExponentScreen" component={ExponentScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

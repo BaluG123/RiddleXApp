@@ -6,20 +6,25 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-nat
 import { responsiveFontSize as fs } from "react-native-responsive-dimensions";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const defaultStats = {
+  timeHighScore: 0,
+  totalProblems: 0,
+  correctAnswers: 0,
+  averageTime: 0,
+  categoryPerformance: {
+    addition: { correct: 0, total: 0 },
+    subtraction: { correct: 0, total: 0 },
+    multiplication: { correct: 0, total: 0 },
+    division: { correct: 0, total: 0 },
+  },
+  recentScores: [],
+};
+
+
 const StatisticsScreen = ({ navigation }) => {
-  const [stats, setStats] = useState({
-    timeHighScore: 0,
-    totalProblems: 0,
-    correctAnswers: 0,
-    averageTime: 0,
-    categoryPerformance: {
-      addition: { correct: 0, total: 0 },
-      subtraction: { correct: 0, total: 0 },
-      multiplication: { correct: 0, total: 0 },
-      division: { correct: 0, total: 0 },
-    },
-    recentScores: [],
-  });
+
+  const [stats, setStats] = useState(defaultStats);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadStats();
@@ -30,9 +35,17 @@ const StatisticsScreen = ({ navigation }) => {
       const storedStats = await AsyncStorage.getItem('mathStats');
       if (storedStats) {
         setStats(JSON.parse(storedStats));
+      } else {
+        // If no stored stats, initialize with default values
+        await AsyncStorage.setItem('mathStats', JSON.stringify(defaultStats));
+        setStats(defaultStats);
       }
     } catch (error) {
       console.error('Error loading stats:', error);
+      // On error, use default stats
+      setStats(defaultStats);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -46,27 +59,48 @@ const StatisticsScreen = ({ navigation }) => {
     </View>
   );
 
+
   const getCategoryAccuracy = (category) => {
-    const { correct, total } = stats.categoryPerformance[category];
+    const { correct, total } = stats.categoryPerformance[category] || { correct: 0, total: 0 };
     return total === 0 ? 0 : Math.round((correct / total) * 100);
   };
 
   const calculateTotalAccuracy = () => {
-    const totalCorrect = stats.categoryPerformance.addition.correct + 
-                        stats.categoryPerformance.subtraction.correct + 
-                        stats.categoryPerformance.multiplication.correct + 
-                        stats.categoryPerformance.division.correct;
+    const totalCorrect = Object.values(stats.categoryPerformance).reduce(
+      (sum, category) => sum + (category.correct || 0),
+      0
+    );
     
-    const totalAttempts = stats.categoryPerformance.addition.total + 
-                         stats.categoryPerformance.subtraction.total + 
-                         stats.categoryPerformance.multiplication.total + 
-                         stats.categoryPerformance.division.total;
+    const totalAttempts = Object.values(stats.categoryPerformance).reduce(
+      (sum, category) => sum + (category.total || 0),
+      0
+    );
     
     return totalAttempts === 0 ? 0 : Math.round((totalCorrect / totalAttempts) * 100);
   };
 
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.loadingText}>Loading statistics...</Text>
+      </View>
+    );
+  }
+
+  const totalCorrect = Object.values(stats.categoryPerformance).reduce(
+    (sum, category) => sum + (category.correct || 0),
+    0
+  );
+
+  const totalProblems = Object.values(stats.categoryPerformance).reduce(
+    (sum, category) => sum + (category.total || 0),
+    0
+  );
+
   return (
-    <View style={styles.container}>
+
+
+<View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={hp(4)} color="#ECF0F1" />
@@ -75,32 +109,26 @@ const StatisticsScreen = ({ navigation }) => {
       </View>
 
       <ScrollView style={styles.scrollContainer}>
-      <View style={styles.statsGrid}>
-  <StatCard
-    title="High Score"
-    value={stats.categoryPerformance.addition.correct + 
-           stats.categoryPerformance.subtraction.correct + 
-           stats.categoryPerformance.multiplication.correct + 
-           stats.categoryPerformance.division.correct || 0}
-    icon="emoji-events"
-    color="#F1C40F"
-  />
-  <StatCard
-    title="Total Problems"
-    value={stats.categoryPerformance.addition.total + 
-           stats.categoryPerformance.subtraction.total + 
-           stats.categoryPerformance.multiplication.total + 
-           stats.categoryPerformance.division.total || 0}
-    icon="functions"
-    color="#2ECC71"
-  />
-  <StatCard
-    title="Accuracy"
-    value={`${calculateTotalAccuracy()}%`}
-    icon="check-circle"
-    color="#3498DB"
-  />
-</View>
+        <View style={styles.statsGrid}>
+          <StatCard
+            title="High Score"
+            value={totalCorrect}
+            icon="emoji-events"
+            color="#F1C40F"
+          />
+          <StatCard
+            title="Total Problems"
+            value={totalProblems}
+            icon="functions"
+            color="#2ECC71"
+          />
+          <StatCard
+            title="Accuracy"
+            value={`${calculateTotalAccuracy()}%`}
+            icon="check-circle"
+            color="#3498DB"
+          />
+        </View>
 
         <View style={styles.chartContainer}>
           <Text style={styles.chartTitle}>Category Performance</Text>
@@ -128,17 +156,21 @@ const StatisticsScreen = ({ navigation }) => {
 
         <View style={styles.recentScores}>
           <Text style={styles.chartTitle}>Recent Scores</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {stats.recentScores.map((score, index) => (
-              <View key={index} style={styles.scoreCard}>
-                <Text style={styles.scoreValue}>{score}</Text>
-                <Text style={styles.scoreLabel}>Game {index + 1}</Text>
-              </View>
-            ))}
-          </ScrollView>
+          {stats.recentScores.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {stats.recentScores.map((score, index) => (
+                <View key={index} style={styles.scoreCard}>
+                  <Text style={styles.scoreValue}>{score}</Text>
+                  <Text style={styles.scoreLabel}>Game {index + 1}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={styles.noDataText}>No recent scores available</Text>
+          )}
         </View>
       </ScrollView>
-    </View>
+    </View> 
   );
 };
 
@@ -261,6 +293,20 @@ const styles = StyleSheet.create({
     fontSize: fs(1.5),
     color: '#BDC3C7',
     marginTop: hp(0.5),
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: fs(2),
+    color: '#ECF0F1',
+  },
+  noDataText: {
+    fontSize: fs(1.8),
+    color: '#BDC3C7',
+    textAlign: 'center',
+    padding: hp(2),
   },
 });
 
