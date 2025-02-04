@@ -1,220 +1,156 @@
-// HomeScreen.js
-
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, BackHandler } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, BackHandler, Linking } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import MathIcon from 'react-native-vector-icons/FontAwesome5';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
-import {
-  responsiveFontSize as fs
-} from "react-native-responsive-dimensions";
-import { Linking } from 'react-native';
-import SocialIcon from 'react-native-vector-icons/FontAwesome';
+import { responsiveFontSize as fs } from "react-native-responsive-dimensions";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 import VersionCheck from 'react-native-version-check';
+import FAIcon from 'react-native-vector-icons/FontAwesome';
 
 const Homescreen = ({ navigation }) => {
   const [showUpdateMessage, setShowUpdateMessage] = useState(false);
 
-  // const adUnitId2 = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/2707235997';
-
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-
-    return () => {
-      backHandler.remove();
-    };
+    checkForUpdates();
+    return () => backHandler.remove();
   }, []);
 
-  const handleOtherAppClick = (appUrl) => {
-    Linking.openURL(appUrl);
-  };
-
-  const checkAppVersion = async () => {
+  const checkForUpdates = async () => {
     try {
-      const latestVersion = await VersionCheck.getLatestVersion({
-        provider: 'playStore', // Specify 'playStore' for Android
-      });
-
-      const currentVersion = await VersionCheck.getCurrentVersion();
-
-      if (latestVersion > currentVersion) {
-        // Show update message or popup
-        setShowUpdateMessage(true);
-      }
+      const updateNeeded = await VersionCheck.needUpdate();
+      setShowUpdateMessage(updateNeeded.isNeeded);
     } catch (error) {
-      console.error('Error checking app version:', error);
+      console.error('Update check failed:', error);
     }
   };
 
   const handleBackPress = () => {
-    // Check if the current route is the HomeScreen
     if (navigation.isFocused()) {
       Alert.alert(
         'Exit App',
         'Are you sure you want to exit?',
         [
-          { text: 'Cancel', onPress: () => { }, style: 'cancel' },
-          { text: 'Exit', onPress: () => BackHandler.exitApp(), style: 'destructive', },
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Exit', onPress: () => BackHandler.exitApp(), style: 'destructive' },
         ],
-        {
-          cancelable: false,
-          style: 'default', // Customize the Alert dialog style
-          titleStyle: { fontSize: 24, fontWeight: 'bold' }, // Customize the title style
-          messageStyle: { fontSize: 16 }, // Customize the message style
-        },
+        { cancelable: false }
       );
-
-      // Return true to prevent default behavior (exit the app) only on the HomeScreen
       return true;
     }
-
-    // Return false to allow the default back behavior on other screens
     return false;
   };
 
-  const handleLevelsPress = () => {
-    navigation.navigate('LevelScreen');
-  };
+  const mathOperations = [
+    { title: "Riddles", icon: "brain", color: "#FF6B6B", navigate: 'LevelScreen' },
+    { title: "Addition", icon: "plus", color: "#4ECDC4", navigate: 'AdditionScreen' },
+    { title: "Subtraction", icon: "minus", color: "#45B7D1", navigate: 'SubtractionScreen' },
+    { title: "Multiplication", icon: "times", color: "#96CEB4", navigate: 'MultiplicationScreen' },
+    { title: "Division", icon: "divide", color: "#FFEEAD", navigate: 'DivisionScreen' },
+    { title: "Mixed", icon: "random", color: "#D4A5A5", navigate: 'MixedScreen' },
+    { title: "Time Challenge", icon: "stopwatch", color: "#FF9F68", navigate: 'TimeChallengeScreen' },
+    { title: "Statistics", icon: "chart-bar", color: "#A8D8EA", navigate: 'StatisticsScreen' }
+  ];
 
-  const handleSocialMediaClick = (socialMedia) => {
-    // Define social media URLs
-    const socialMediaUrls = {
-      instagram: 'https://www.instagram.com/math.riddles_x',
-      twitter: 'https://twitter.com/WebDeveloper20',
-      // Add other social media URLs as needed
-    };
+  const MathSection = ({ title, icon, color, onPress }) => (
+    <TouchableOpacity style={[styles.sectionContainer, { backgroundColor: color }]} onPress={onPress}>
+      <MathIcon name={icon} size={hp(4)} color="#2C3E50" style={styles.sectionIcon} />
+      <Text style={styles.sectionText}>{title}</Text>
+    </TouchableOpacity>
+  );
 
-    // Check if the selected social media exists in the URLs
-    if (socialMediaUrls[socialMedia]) {
-      // Open the social media URL
-      Linking.openURL(socialMediaUrls[socialMedia]);
-    } else {
-      // Handle the case when the social media URL is not defined
-      console.warn(`Social media URL for ${socialMedia} is not defined.`);
-    }
-  };
-
-  const handleClearDataClick = async () => {
-    // Show an Alert to confirm clearing data
+  const handleClearData = async () => {
     Alert.alert(
-      'Clear Data ?',
-      'If you clear the data, you will restart the game from the first level.',
+      'Reset Progress',
+      'This will reset all your progress and scores. Continue?',
       [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Cancel',
-          onPress: () => { },
-          style: 'cancel',
-        },
-        {
-          text: 'Clear',
+          text: 'Reset',
           onPress: async () => {
             try {
-              // Clear AsyncStorage data
               await AsyncStorage.clear();
-              // Optionally, you can perform additional actions after clearing data
-              console.log('Data cleared successfully');
+              Alert.alert('Success', 'Progress has been reset');
             } catch (error) {
-              console.error('Error clearing data:', error);
+              Alert.alert('Error', 'Failed to reset progress');
             }
           },
           style: 'destructive',
         },
-      ],
-      { cancelable: false }
+      ]
     );
   };
 
-  {showUpdateMessage && (
-    <View>
-      <Text>New update available! Update now for the latest features.</Text>
-      <TouchableOpacity
-        onPress={() => {
-          // Open Play Store for the update
-          VersionCheck.openAppStore({
-            appName: 'Math Riddles',
-            appStoreCountry: 'IN',
-          });
-        }}
-      >
-        <Text>Update Now</Text>
-      </TouchableOpacity>
-    </View>
-  )}
-
+  const socialLinks = [
+    { name: 'instagram', url: 'https://www.instagram.com/math.riddles_x' },
+    { name: 'twitter', url: 'https://twitter.com/WebDeveloper20' },
+    { name: 'whatsapp', url: 'whatsapp://send?text=Check%20out%20Math%20Master%20app!%20Download%20it%20from%20Play%20Store:%20https://play.google.com/store/apps/details?id=com.riddlex&pli=1' + VersionCheck.getPackageName() },
+  ];
 
   const adUnitId = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/8571195943';
 
-
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.appName}>Math Master</Text>
+      </View>
 
-      <Text style={styles.appName}>Math Riddles</Text>
-      <TouchableOpacity onPress={handleLevelsPress}>
-        <View style={styles.playIconContainer}>
-          <Icon name="play-arrow" size={32} color="black" />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.gridContainer}>
+          {mathOperations.map((operation, index) => (
+            <MathSection
+              key={index}
+              title={operation.title}
+              icon={operation.icon}
+              color={operation.color}
+              onPress={() => navigation.navigate(operation.navigate)}
+            />
+          ))}
         </View>
-      </TouchableOpacity>
-      <Text style={styles.optionText} onPress={handleLevelsPress}>
-        Levels
-      </Text>
-      <Text style={{ color: 'white', fontSize: fs(2.5), fontWeight: 200 }}>Follow Us</Text>
-      <View style={styles.socialMediaRow}>
-        <SocialIcon
-          name="instagram"
-          size={24}
-          color="#FFFFFF"
-          style={styles.socialMediaIcon}
-          onPress={() => handleSocialMediaClick('instagram')}
-        />
-        <Text style={styles.socialMediaText} onPress={() => handleSocialMediaClick('instagram')}>
-          Instagram
-        </Text>
-      </View>
-      {/* Twitter */}
-      <View style={styles.socialMediaRow}>
-        <SocialIcon
-          name="twitter"
-          size={24}
-          color="#FFFFFF"
-          style={styles.socialMediaIcon}
-          onPress={() => handleSocialMediaClick('twitter')}
-        />
-        <Text style={styles.socialMediaText} onPress={() => handleSocialMediaClick('twitter')}>
-          Twitter
-        </Text>
-      </View>
-      <View style={styles.socialMediaRow}>
-        <Icon
-          name="restart-alt"
-          size={24}
-          color="#FFFFFF"
-          style={styles.socialMediaIcon}
-          onPress={() => handleSocialMediaClick('twitter')}
-        />
-        <Text style={styles.clearDataText} onPress={handleClearDataClick}>
-          Restart
-        </Text>
-      </View>
-      <View style={styles.socialMediaRow}>
-        <Icon
-          name="cancel"
-          size={24}
-          color="#FFFFFF"
-          style={styles.socialMediaIcon}
-          onPress={() => handleSocialMediaClick('twitter')}
-        />
-        <Text style={styles.optionText} onPress={handleBackPress}>Exit</Text>
-      </View>
-      <TouchableOpacity style={styles.otherAppContainer} onPress={() => handleOtherAppClick('https://play.google.com/store/apps/details?id=com.gymexercises')}>
-        <Text style={styles.otherAppText}>Other Apps</Text>
-      </TouchableOpacity>
-      <View style={{ position: 'absolute', bottom: 0, width: '100%' }}>
+        <View style={styles.socialContainer}>
+          {socialLinks.map((social, index) => (
+           <TouchableOpacity
+           key={index}
+           style={styles.socialButton}
+           onPress={() => Linking.openURL(social.url)}
+         >
+           <FAIcon name={social.name} size={hp(3)} color="#ECF0F1" />
+         </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.footerButton} onPress={handleClearData}>
+            <Icon name="refresh" size={hp(2.5)} color="#E74C3C" />
+            <Text style={styles.footerButtonText}>Reset Progress</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.footerButton} onPress={handleBackPress}>
+            <Icon name="exit-to-app" size={hp(2.5)} color="#95A5A6" />
+            <Text style={styles.footerButtonText}>Exit</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      <View style={styles.adContainer}>
         <BannerAd
           unitId={adUnitId}
           size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
         />
       </View>
+
+      {showUpdateMessage && (
+        <View style={styles.updateBanner}>
+          <Text style={styles.updateText}>New Version Available!</Text>
+          <TouchableOpacity
+            style={styles.updateButton}
+            onPress={() => VersionCheck.openAppStore({ appName: 'Math Master' })}
+          >
+            <Text style={styles.updateButtonText}>Update Now</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -222,69 +158,133 @@ const Homescreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: '#2C3E50',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#333333',
+    padding: hp(2),
+    backgroundColor: '#34495E',
+    borderBottomWidth: 1,
+    borderBottomColor: '#3B536F',
   },
   appName: {
-    flex: 0,
-    fontSize: fs(2.8),
-    fontWeight: '200',
-    marginBottom: hp(2),
-    color: '#FFFFFF'
+    fontSize: fs(4),
+    color: '#ECF0F1',
+    fontWeight: '700',
+    letterSpacing: 1.2,
   },
-  playIconContainer: {
-    backgroundColor: '#FFFFFF', // Customize the background color
-    borderRadius: hp(4), // Half of the size for a circular shape
+  scrollContent: {
     padding: hp(2),
-    marginBottom: wp(0),
+    paddingBottom: hp(12),
   },
-  optionsContainer: {
-    alignItems: 'center',
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
-  optionText: {
-    fontSize: fs(2.5),
-    marginVertical: hp(0.5),
-    color: '#FFFFFF',
-    fontWeight: '200',
-    // marginBottom:hp(10)
-  },
-  logo: {
-    width: hp(32), // Adjust the width as needed
-    height: hp(32), // Adjust the height as needed
-    resizeMode: 'contain', // Choose the resizeMode that fits your image
+  sectionContainer: {
+    width: wp(44),
+    height: wp(44),
     marginBottom: hp(2),
-    borderWidth: hp(0.1),
-    borderColor: '#FFFFFF'
+    borderRadius: hp(2),
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
   },
-  socialMediaRow: {
+  sectionIcon: {
+    marginBottom: hp(1),
+  },
+  sectionText: {
+    fontSize: fs(2.2),
+    color: '#2C3E50',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: hp(2),
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#34495E',
+    padding: hp(2),
+    borderRadius: hp(1),
+    marginHorizontal: wp(1),
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: hp(0.5),
   },
-  socialMediaIcon: {
-    marginRight: wp(1),
-  },
-  socialMediaText: {
+  statText: {
     fontSize: fs(2),
-    color: '#FFFFFF',
-    fontWeight: '200',
+    color: '#BDC3C7',
+    marginLeft: wp(2),
   },
-  clearDataText: {
-    fontSize: fs(2.5),
-    marginVertical: hp(0.5),
-    color: '#FFFFFF', // Red color for emphasis
-    fontWeight: '200',
+  socialContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: hp(2),
   },
-  otherAppContainer: {
-    marginTop: hp(1.5),
+  socialButton: {
+    padding: hp(1.5),
+    marginHorizontal: wp(2),
+    backgroundColor: '#34495E',
+    borderRadius: hp(5),
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: hp(2),
+    paddingVertical: hp(1),
+    borderTopWidth: 1,
+    borderTopColor: '#3B536F',
+  },
+  footerButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    padding: hp(1),
   },
-  otherAppText: {
-    fontSize: fs(2.5),
+  footerButtonText: {
+    fontSize: fs(1.8),
+    color: '#BDC3C7',
+    marginLeft: wp(1),
+  },
+  adContainer: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    backgroundColor: '#2C3E50',
+  },
+  updateBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#E67E22',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: hp(1.5),
+  },
+  updateText: {
     color: '#FFFFFF',
-    fontWeight: '200',
-    textDecorationLine: 'underline', // Add underline for better visibility
+    fontSize: fs(1.8),
+    fontWeight: '600',
+  },
+  updateButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: hp(1),
+    paddingVertical: hp(0.5),
+    paddingHorizontal: wp(4),
+  },
+  updateButtonText: {
+    color: '#E67E22',
+    fontWeight: '700',
   },
 });
 

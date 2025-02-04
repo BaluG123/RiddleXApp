@@ -57,41 +57,49 @@
 //   },
 // });
 
-// export default Splashscreen;
-
-
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { responsiveFontSize as fs } from "react-native-responsive-dimensions";
 import LottieView from 'lottie-react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-  withSequence,
-  withDelay,
-  withRepeat,
-} from 'react-native-reanimated';
 
 const Splashscreen = ({ navigation }) => {
-  const scale = useSharedValue(0);
-  const opacity = useSharedValue(0);
-  const slideUp = useSharedValue(50);
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
 
   useEffect(() => {
-    // Animate scale with bouncy effect
-    scale.value = withSequence(
-      withTiming(1.2, { duration: 600 }),
-      withSpring(1, { damping: 12, stiffness: 100 })
-    );
-
-    // Fade in effect
-    opacity.value = withTiming(1, { duration: 800 });
-
-    // Slide up animation for text
-    slideUp.value = withDelay(400, withSpring(0, { damping: 15 }));
+    // Run animations in parallel
+    Animated.parallel([
+      // Fade in animation
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      // Scale animation with spring
+      Animated.sequence([
+        Animated.spring(scaleAnim, {
+          toValue: 1.2,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 4,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Slide up animation
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        delay: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
     // Navigation timer
     const timer = setTimeout(() => {
@@ -101,43 +109,45 @@ const Splashscreen = ({ navigation }) => {
     return () => clearTimeout(timer);
   }, [navigation]);
 
-  const logoStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  const textStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: slideUp.value }],
-    opacity: opacity.value,
-  }));
-
   return (
     <View style={styles.container}>
       {/* Background particles animation */}
       <LottieView
-        source={require('../util/particles.json')} // Make sure to add your particles JSON file
+        source={require('../util/particles.json')}
         autoPlay
         loop
         style={styles.particles}
       />
 
-      {/* Logo container with animation */}
-      <Animated.View style={[styles.logoContainer, logoStyle]}>
-        <Image
-          source={require('../components/Math.png')}
-          style={styles.logo}
-        />
+      {/* Math text with animation */}
+      <Animated.View
+        style={[
+          styles.mathContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}>
+        <Text style={styles.mathText}>Math</Text>
+        <View style={styles.underline} />
       </Animated.View>
 
-      {/* Animated text container */}
-      <Animated.View style={[styles.textContainer, textStyle]}>
+      {/* Animated welcome text container */}
+      <Animated.View
+        style={[
+          styles.textContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}>
         <Text style={styles.introText}>Welcome</Text>
-        <Text style={styles.subText}>Your Math Journey Begins Here</Text>
+        <Text style={styles.subText}>Your Journey Begins Here</Text>
       </Animated.View>
 
       {/* Bottom wave animation */}
       <LottieView
-        source={require('../util/wave.json')} // Make sure to add your wave JSON file
+        source={require('../util/wave.json')}
         autoPlay
         loop
         style={styles.wave}
@@ -151,7 +161,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000000',
+    backgroundColor: '#333333',
   },
   particles: {
     position: 'absolute',
@@ -159,28 +169,37 @@ const styles = StyleSheet.create({
     height: hp('100%'),
     opacity: 0.5,
   },
-  logoContainer: {
+  mathContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logo: {
-    width: hp(25),
-    height: hp(25),
-    resizeMode: 'contain',
-    marginBottom: hp(2),
-  },
-  textContainer: {
-    alignItems: 'center',
-    marginTop: hp(2),
-  },
-  introText: {
-    fontSize: fs(3.5),
-    fontWeight: 'bold',
+  mathText: {
+    fontSize: fs(8),
+    fontWeight: '700',
     color: '#FFFFFF',
-    textAlign: 'center',
+    letterSpacing: wp(1),
     textShadowColor: 'rgba(255, 255, 255, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
+    fontFamily: 'System',  // You can replace with a custom font
+  },
+  underline: {
+    height: hp(0.3),
+    width: wp(30),
+    backgroundColor: '#FFFFFF',
+    marginTop: hp(1),
+    borderRadius: 2,
+    opacity: 0.7,
+  },
+  textContainer: {
+    alignItems: 'center',
+    marginTop: hp(4),
+  },
+  introText: {
+    fontSize: fs(3),
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
   subText: {
     fontSize: fs(2),

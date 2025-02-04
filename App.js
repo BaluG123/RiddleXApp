@@ -83,6 +83,13 @@ import SuccessScreen from './src/screens/SuccessScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import subscribeToTopics from './src/util/notification';
+import TimeChallengeScreen from './src/screens/TimeChallengeScreen';
+import StatisticsScreen from './src/screens/StatisticsScreen';
+import MixedScreen from './src/screens/MixedScreen';
+import AdditionScreen from './src/screens/AdditionScreen';
+import SubtractionScreen from './src/screens/SubtractionScreen';
+import MultiplicationScreen from './src/screens/MultiplicationScreen';
+import DivisionScreen from './src/screens/DivisionScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -148,6 +155,13 @@ async function subscribeToTopic(topic) {
         <Stack.Screen name="HomeScreen" component={Homescreen} />
         <Stack.Screen name="QuestionScreen" component={Questionscreen} />
         <Stack.Screen name="SuccessScreen" component={SuccessScreen} />
+        <Stack.Screen name="TimeChallengeScreen" component={TimeChallengeScreen} />
+        <Stack.Screen name="StatisticsScreen" component={StatisticsScreen} />
+        <Stack.Screen name="MixedScreen" component={MixedScreen} />
+        <Stack.Screen name="AdditionScreen" component={AdditionScreen} />
+        <Stack.Screen name="SubtractionScreen" component={SubtractionScreen}/>
+        <Stack.Screen name="MultiplicationScreen" component={MultiplicationScreen} />
+        <Stack.Screen name="DivisionScreen" component={DivisionScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
