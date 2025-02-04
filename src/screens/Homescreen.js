@@ -55,7 +55,7 @@ const Homescreen = ({ navigation }) => {
     { title: "Fractions", icon: "pizza-slice", color: "#F1C40F", navigate: 'FractionScreen' },
     { title: "Exponents", icon: "superscript", color: "#E67E22", navigate: 'ExponentScreen' },
     { title: "Word Problems", icon: "comment-dots", color: "#7F8C8D", navigate: 'WordProblemsScreen' },
-    { title: "Logic Puzzles", icon: "puzzle-piece", color: "#D35400", navigate: 'LogicPuzzlesScreen' },
+    { title: "Logic Puzzles", icon: "puzzle-piece", color: "#D35400", navigate: 'LogicPuzzleScreen' },
     { title: "Measurement", icon: "ruler-combined", color: "#2ECC71", navigate: 'MeasurementScreen' },
     { title: "Algebra Basics", icon: "cube", color: "#9B59B6", navigate: 'AlgebraScreen' },
     { title: "Number Patterns", icon: "wave-square", color: "#1ABC9C", navigate: 'PatternsScreen' },

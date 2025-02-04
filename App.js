@@ -93,6 +93,9 @@ import DivisionScreen from './src/screens/DivisionScreen';
 import GeometryScreen from './src/screens/GeometryScreen';
 import FractionScreen from './src/screens/FractionScreen';
 import ExponentScreen from './src/screens/ExponentScreen';
+import WordProblemsScreen from './src/screens/WordProblemsScreen';
+import LogicPuzzleScreen from './src/screens/LogicPuzzlesScreen';
+import MeasurementScreen from './src/screens/MeasurementScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -168,6 +171,9 @@ async function subscribeToTopic(topic) {
         <Stack.Screen name="GeometryScreen" component={GeometryScreen} />
         <Stack.Screen name="FractionScreen" component={FractionScreen} />
         <Stack.Screen name="ExponentScreen" component={ExponentScreen} />
+        <Stack.Screen name="WordProblemsScreen" component={WordProblemsScreen} />
+        <Stack.Screen name="LogicPuzzleScreen" component={LogicPuzzleScreen} />
+        <Stack.Screen name="MeasurementScreen" component={MeasurementScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
