@@ -296,39 +296,67 @@ class AdManager {
     }
   }
 
-  /**
-   * Show rewarded ad for hint
-   */
   async showRewardedAdForHint() {
     try {
+      console.log('Attempting to show rewarded ad for hint...');
       if (this.isRewardedLoaded) {
+        console.log('Ad loaded, showing...');
         await this.rewardedAd.show();
         return true;
       } else {
-        console.warn('Rewarded ad not loaded');
-        return false;
+        console.log('Ad not loaded, attempting to load...');
+        await this.rewardedAd.load();
+        
+        let waitTime = 0;
+        while (!this.isRewardedLoaded && waitTime < 5000) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          waitTime += 500;
+        }
+        
+        if (this.isRewardedLoaded) {
+          console.log('Ad loaded after wait, showing...');
+          await this.rewardedAd.show();
+          return true;
+        } else {
+          console.log('Ad still not loaded, showing content without ad');
+          return true;
+        }
       }
     } catch (error) {
-      console.error('Error showing rewarded ad:', error);
-      return false;
+      console.warn('Error showing rewarded ad:', error);
+      return true;
     }
   }
 
-  /**
-   * Show rewarded interstitial ad for solution
-   */
   async showRewardedInterstitialAdForSolution() {
     try {
+      console.log('Attempting to show interstitial ad for solution...');
       if (this.isInterstitialLoaded) {
+        console.log('Ad loaded, showing...');
         await this.rewardedInterstitialAd.show();
         return true;
       } else {
-        console.warn('Interstitial ad not loaded');
-        return false;
+        console.log('Ad not loaded, attempting to load...');
+        await this.rewardedInterstitialAd.load();
+        
+        let waitTime = 0;
+        while (!this.isInterstitialLoaded && waitTime < 5000) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          waitTime += 500;
+        }
+        
+        if (this.isInterstitialLoaded) {
+          console.log('Ad loaded after wait, showing...');
+          await this.rewardedInterstitialAd.show();
+          return true;
+        } else {
+          console.log('Ad still not loaded, showing content without ad');
+          return true;
+        }
       }
     } catch (error) {
-      console.error('Error showing interstitial ad:', error);
-      return false;
+      console.warn('Error showing interstitial ad:', error);
+      return true;
     }
   }
 

@@ -138,39 +138,33 @@ const Questionscreen = ({ route, navigation }) => {
 
   const handleWatchAdForHint = async () => {
     try {
+      setWatchAdForHintModalVisible(false);
+      
       const adShown = await adManager.showRewardedAdForHint();
       if (adShown) {
-        setWatchAdForHintModalVisible(false);
         setHmodalVisible(true);
       } else {
-        Alert.alert(
-          'Ad Not Available',
-          'No ads are available right now. Please try again in a moment.',
-          [{ text: 'OK' }]
-        );
+        setHmodalVisible(true);
       }
     } catch (error) {
       console.error('Error showing hint ad:', error);
-      Alert.alert('Error', 'Failed to load ad. Please try again.');
+      setHmodalVisible(true);
     }
   };
 
   const handleWatchAdForSolution = async () => {
     try {
+      setWatchAdForSolutionModalVisible(false);
+      
       const adShown = await adManager.showRewardedInterstitialAdForSolution();
       if (adShown) {
-        setWatchAdForSolutionModalVisible(false);
         setModalVisible(true);
       } else {
-        Alert.alert(
-          'Ad Not Available',
-          'No ads are available right now. Please try again in a moment.',
-          [{ text: 'OK' }]
-        );
+        setModalVisible(true);
       }
     } catch (error) {
       console.error('Error showing solution ad:', error);
-      Alert.alert('Error', 'Failed to load ad. Please try again.');
+      setModalVisible(true);
     }
   };
 
@@ -200,19 +194,21 @@ const Questionscreen = ({ route, navigation }) => {
           </View>
         ) : (
           <View style={styles.questionContainer}>
-            {isImageQuestion && question ? (
-              <Image 
-                source={{ uri: question }} 
-                style={styles.imageQuestion} 
-                resizeMode="contain"
-                onError={(error) => {
-                  console.warn('Image load error:', error);
-                  setIsImageQuestion(false);
-                }}
-              />
-            ) : (
-              <Text style={styles.question}>{question || 'Loading...'}</Text>
-            )}
+            <View style={styles.questionContent}>
+              {isImageQuestion && question ? (
+                <Image 
+                  source={{ uri: question }} 
+                  style={styles.imageQuestion} 
+                  resizeMode="contain"
+                  onError={(error) => {
+                    console.warn('Image load error:', error);
+                    setIsImageQuestion(false);
+                  }}
+                />
+              ) : (
+                <Text style={styles.question}>{question || 'Loading...'}</Text>
+              )}
+            </View>
           </View>
         )}
 
@@ -434,7 +430,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   questionContainer: {
-    flex: 0.7,
+    flex: 0.65,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#34495E',
@@ -444,6 +440,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#4ECDC4',
   },
+  questionContent: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   question: {
     fontSize: fs(3.2),
     color: '#ECF0F1',
@@ -451,12 +453,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   imageQuestion: {
-    width: wp(80),
-    height: hp(40),
+    width: wp(85),
+    height: hp(35),
     borderRadius: hp(1),
   },
   loadingContainer: {
-    flex: 0.7,
+    flex: 0.65,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -479,28 +481,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   inputContainer: {
-    padding: hp(2),
+    flex: 0.35,
+    padding: hp(1.5),
+    justifyContent: 'space-between',
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: hp(2),
+    marginBottom: hp(1.5),
   },
   input: {
     flex: 0.4,
     backgroundColor: '#34495E',
     color: '#ECF0F1',
-    padding: hp(1.5),
-    borderRadius: hp(1),
+    padding: hp(1.2),
+    borderRadius: hp(0.8),
     marginRight: wp(2),
     borderWidth: 1,
     borderColor: '#4ECDC4',
+    fontSize: fs(2),
   },
   actionButton: {
     backgroundColor: '#34495E',
-    padding: hp(1.5),
-    borderRadius: hp(1),
-    marginRight: wp(2),
+    padding: hp(1.2),
+    borderRadius: hp(0.8),
+    marginRight: wp(1.5),
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -508,8 +513,8 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     backgroundColor: '#4ECDC4',
-    padding: hp(1.5),
-    borderRadius: hp(1),
+    padding: hp(1.2),
+    borderRadius: hp(0.8),
     alignItems: 'center',
     justifyContent: 'center',
     flex: 0.75,
@@ -529,12 +534,12 @@ const styles = StyleSheet.create({
   },
   keypadButton: {
     backgroundColor: '#34495E',
-    width: wp(15),
-    height: wp(15),
-    borderRadius: wp(7.5),
+    width: wp(14),
+    height: wp(14),
+    borderRadius: wp(7),
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: wp(1),
+    marginHorizontal: wp(0.8),
     borderWidth: 1,
     borderColor: '#4ECDC4',
   },
@@ -543,7 +548,7 @@ const styles = StyleSheet.create({
   },
   keypadText: {
     color: '#ECF0F1',
-    fontSize: fs(3),
+    fontSize: fs(2.8),
     fontWeight: '600',
   },
   modalContainer: {
