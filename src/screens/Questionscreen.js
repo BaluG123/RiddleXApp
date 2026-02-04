@@ -72,18 +72,31 @@ const Questionscreen = ({ route, navigation }) => {
   }, []);
 
   const playSound = (soundFile) => {
-    if (soundOn) {
-      try {
-        const sound = new Sound(soundFile, Sound.MAIN_BUNDLE, (error) => {
-          if (error) {
-            console.warn('Sound error:', error);
-            return;
+    if (!soundOn) {
+      console.log('Sound is disabled');
+      return;
+    }
+
+    try {
+      console.log('Playing sound:', soundFile);
+      const sound = new Sound(soundFile, Sound.MAIN_BUNDLE, (error) => {
+        if (error) {
+          console.warn('Sound load error:', error);
+          return;
+        }
+        console.log('Sound loaded, playing...');
+        sound.play((success) => {
+          if (success) {
+            console.log('Sound played successfully');
+            sound.release();
+          } else {
+            console.warn('Sound playback failed');
+            sound.release();
           }
-          sound.play(() => sound.release());
         });
-      } catch (error) {
-        console.warn('Error playing sound:', error);
-      }
+      });
+    } catch (error) {
+      console.warn('Error creating sound:', error);
     }
   };
 
@@ -119,19 +132,18 @@ const Questionscreen = ({ route, navigation }) => {
         await storageManager.setCompletedLevel(levelNumber);
         await storageManager.setCurrentLevel(levelNumber + 1);
         
-        // Navigate to success screen after a brief delay
         setTimeout(() => {
           navigation.navigate('SuccessScreen', { levelNumber });
-        }, 500);
+        }, 1500);
       } else {
         playSound('wrong_answer.mp3');
         showErrorMessage(feedback.message, 'error');
         setInputValue('');
+        setIsSubmitting(false);
       }
     } catch (error) {
       console.error('Error submitting answer:', error);
       showErrorMessage('An error occurred. Please try again.', 'error');
-    } finally {
       setIsSubmitting(false);
     }
   };
