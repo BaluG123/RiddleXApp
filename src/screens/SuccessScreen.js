@@ -109,36 +109,34 @@
 
 //************Above is old code , it's working perfectly fine */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { responsiveFontSize as fs } from "react-native-responsive-dimensions";
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import storageManager from '../util/storageManager';
 
 const adUnitId = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/7509768784';
 const adUnitId2 = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/2801836195';
 
 const SuccessScreen = ({ navigation, route }) => {
   const { levelNumber } = route.params;
-  const [question, setQuestion] = useState(null);
 
   useEffect(() => {
-    fetch(`https://riddlexapi.pythonanywhere.com/api/levels/${levelNumber}/`)
-      .then((response) => response.json())
-      .then((data) => {
-        setQuestion(data.math_question);
-      })
-      .catch((error) => console.error('Error:', error));
-
-    AsyncStorage.getItem('completedLevel').then((completedLevel) => {
-      if (!completedLevel || levelNumber > parseInt(completedLevel)) {
-        AsyncStorage.setItem('completedLevel', levelNumber.toString());
+    const updateProgress = async () => {
+      try {
+        const completedLevel = await storageManager.getCompletedLevel();
+        if (levelNumber > completedLevel) {
+          await storageManager.setCompletedLevel(levelNumber);
+        }
+        await storageManager.setCurrentLevel(levelNumber + 1);
+      } catch (error) {
+        console.warn('Error updating progress:', error);
       }
-    });
+    };
 
-    AsyncStorage.setItem('currentLevel', levelNumber.toString());
+    updateProgress();
   }, [levelNumber]);
 
   const handleNextLevel = () => {

@@ -4,7 +4,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Sound from 'react-native-sound';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { responsiveFontSize as fs } from "react-native-responsive-dimensions";
-import { validateAnswer, getAnswerFeedback } from '../util/answerValidator';
+import { getAnswerFeedback } from '../util/answerValidator';
 import apiClient from '../util/apiClient';
 import adManager from '../util/adManager';
 import storageManager from '../util/storageManager';
