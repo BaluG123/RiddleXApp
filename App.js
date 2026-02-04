@@ -1,9 +1,8 @@
-// App.js - Simplified version without Firebase for initial testing
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-// import { createNativeStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
+import { MobileAds } from 'react-native-google-mobile-ads';
+import adManager from './src/util/adManager';
 import Splashscreen from './src/screens/Splashscreen';
 import Homescreen from './src/screens/Homescreen';
 import Levelscreen from './src/screens/Levelscreen';
@@ -29,10 +28,38 @@ import EquationsScreen from './src/screens/EquationsScreen';
 import ProbabilityScreen from './src/screens/ProbabilityScreen';
 import RootsScreen from './src/screens/RootsScreen';
 
-// const Stack = createNativeStackNavigator();
 const Stack = createStackNavigator();
 
 const App = () => {
+  const [adsInitialized, setAdsInitialized] = useState(false);
+
+  useEffect(() => {
+    const initializeAds = async () => {
+      try {
+        await MobileAds().initialize();
+        console.log('Google Mobile Ads initialized');
+        
+        adManager.initializeAds();
+        setAdsInitialized(true);
+        
+        setTimeout(() => {
+          adManager.showAppOpenAd().then(shown => {
+            console.log('App open ad shown:', shown);
+          });
+        }, 2000);
+      } catch (error) {
+        console.warn('Error initializing ads:', error);
+        setAdsInitialized(true);
+      }
+    };
+
+    initializeAds();
+
+    return () => {
+      adManager.cleanup();
+    };
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="SplashScreen" screenOptions={{ headerShown: false }}>
@@ -45,7 +72,7 @@ const App = () => {
         <Stack.Screen name="StatisticsScreen" component={StatisticsScreen} />
         <Stack.Screen name="MixedScreen" component={MixedScreen} />
         <Stack.Screen name="AdditionScreen" component={AdditionScreen} />
-        <Stack.Screen name="SubtractionScreen" component={SubtractionScreen}/>
+        <Stack.Screen name="SubtractionScreen" component={SubtractionScreen} />
         <Stack.Screen name="MultiplicationScreen" component={MultiplicationScreen} />
         <Stack.Screen name="DivisionScreen" component={DivisionScreen} />
         <Stack.Screen name="GeometryScreen" component={GeometryScreen} />
