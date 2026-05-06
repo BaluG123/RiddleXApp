@@ -1,265 +1,175 @@
-import React, { useState, useEffect, useCallback } from 'react';
+/**
+ * TimeChallengeScreen — Math Master v3.0
+ * Solve as many problems as possible in 60 seconds
+ */
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Alert } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import LinearGradient from 'react-native-linear-gradient';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
-import { responsiveFontSize as fs } from "react-native-responsive-dimensions";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useGame } from '../context/GameContext';
+import { generateProblem } from '../engine/QuestionGenerator';
+import { Colors, Gradients } from '../theme/colors';
+import { FontSizes, Fonts } from '../theme/typography';
+import { GradientHeader, OptionButton, StatPill } from '../components/UIComponents';
+import adManager from '../util/adManager';
+
+const CHALLENGE_TIME = 60;
 
 const TimeChallengeScreen = ({ navigation }) => {
-  const [timeLeft, setTimeLeft] = useState(60);
+  const { state, t, engine, checkAchievements } = useGame();
+  
+  const [timeLeft, setTimeLeft] = useState(CHALLENGE_TIME);
   const [score, setScore] = useState(0);
-  const [currentProblem, setCurrentProblem] = useState(null);
-  const [animation] = useState(new Animated.Value(1));
+  const [streak, setStreak] = useState(0);
   const [gameActive, setGameActive] = useState(false);
-  const [highScore, setHighScore] = useState(0);
+  const [problem, setProblem] = useState(null);
+  const [disabled, setDisabled] = useState(false);
+  
+  const timerRef = useRef(null);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const shakeAnim = useRef(new Animated.Value(0)).current;
 
-  const generateProblem = useCallback(() => {
-    const operations = ['+', '-', 'x', '÷'];
-    const operation = operations[Math.floor(Math.random() * operations.length)];
-    let num1, num2, answer;
-
-    switch (operation) {
-      case '+':
-        num1 = Math.floor(Math.random() * 50) + 1;
-        num2 = Math.floor(Math.random() * 50) + 1;
-        answer = num1 + num2;
-        break;
-      case '-':
-        num1 = Math.floor(Math.random() * 50) + 1;
-        num2 = Math.floor(Math.random() * num1) + 1;
-        answer = num1 - num2;
-        break;
-      case 'x':
-        num1 = Math.floor(Math.random() * 12) + 1;
-        num2 = Math.floor(Math.random() * 12) + 1;
-        answer = num1 * num2;
-        break;
-      case '÷':
-        num2 = Math.floor(Math.random() * 12) + 1;
-        answer = Math.floor(Math.random() * 12) + 1;
-        num1 = num2 * answer;
-        break;
-    }
-
-    const wrongAnswers = [
-      answer + Math.floor(Math.random() * 5) + 1,
-      answer - Math.floor(Math.random() * 5) - 1,
-      answer + Math.floor(Math.random() * 10) + 5,
-    ];
-
-    const options = [...wrongAnswers, answer].sort(() => Math.random() - 0.5);
-
-    return {
-      num1,
-      num2,
-      operation,
-      answer,
-      options,
-    };
-  }, []);
-
-  const startGame = useCallback(async () => {
+  const startChallenge = () => {
     setGameActive(true);
-    setTimeLeft(60);
     setScore(0);
-    setCurrentProblem(generateProblem());
-    const savedHighScore = await AsyncStorage.getItem('timeHighScore');
-    if (savedHighScore) setHighScore(parseInt(savedHighScore));
-  }, [generateProblem]);
+    setStreak(0);
+    setTimeLeft(CHALLENGE_TIME);
+    generateNext();
+  };
 
-  const handleAnswer = useCallback((selectedAnswer) => {
-    if (!gameActive) return;
-
-    Animated.sequence([
-      Animated.timing(animation, {
-        toValue: 0.8,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(animation, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    if (selectedAnswer === currentProblem.answer) {
-      setScore(prev => prev + 1);
-    }
-    setCurrentProblem(generateProblem());
-  }, [currentProblem, gameActive, generateProblem, animation]);
+  const generateNext = useCallback(() => {
+    // difficulty increases with score
+    const difficulty = Math.floor(score / 30) + 1;
+    const p = generateProblem('mixed', difficulty);
+    setProblem(p);
+    setDisabled(false);
+  }, [score]);
 
   useEffect(() => {
-    let timer;
     if (gameActive && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            handleGameOver();
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
-    } else if (timeLeft === 0) {
-      setGameActive(false);
-      if (score > highScore) {
-        AsyncStorage.setItem('timeHighScore', score.toString());
-        setHighScore(score);
-        Alert.alert('New High Score!', `Congratulations! You scored ${score} points!`);
-      }
+    } else {
+      clearInterval(timerRef.current);
     }
-    return () => clearInterval(timer);
-  }, [timeLeft, gameActive, score, highScore]);
+    return () => clearInterval(timerRef.current);
+  }, [gameActive, timeLeft]);
 
-  if (!gameActive) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={hp(4)} color="#ECF0F1" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Time Challenge</Text>
-        </View>
-        <View style={styles.startContainer}>
-          <Text style={styles.highScoreText}>High Score: {highScore}</Text>
-          <TouchableOpacity style={styles.startButton} onPress={startGame}>
-            <Text style={styles.startButtonText}>Start Challenge</Text>
-          </TouchableOpacity>
-          <Text style={styles.instructionText}>
-            Solve as many problems as you can in 60 seconds!
-          </Text>
-        </View>
-      </View>
+  const handleAnswer = (selected) => {
+    if (disabled || !gameActive) return;
+    setDisabled(true);
+
+    const isCorrect = selected === problem.answer;
+
+    if (isCorrect) {
+      // Pulse animation
+      Animated.sequence([
+        Animated.timing(scaleAnim, { toValue: 1.1, duration: 100, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+      ]).start();
+
+      const newStreak = streak + 1;
+      const points = 10 + (newStreak > 5 ? 5 : 0);
+      setScore(prev => prev + points);
+      setStreak(newStreak);
+      
+      // Earn small XP/Coins immediately in Time Challenge
+      engine.recordCorrect('timeChallenge', 1);
+    } else {
+      // Shake animation
+      Animated.sequence([
+        Animated.timing(shakeAnim, { toValue: 10, duration: 60, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: -10, duration: 60, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
+      ]).start();
+
+      setStreak(0);
+      // Optional: penalty for wrong answer in time challenge
+      // setTimeLeft(prev => Math.max(0, prev - 2)); 
+    }
+
+    setTimeout(() => {
+      generateNext();
+    }, 400);
+  };
+
+  const handleGameOver = async () => {
+    setGameActive(false);
+    clearInterval(timerRef.current);
+    
+    await checkAchievements();
+    
+    Alert.alert(
+      t('game.gameOver'),
+      t('time.congrats', { score }),
+      [
+        { text: t('time.start'), onPress: startChallenge },
+        { text: t('game.exit'), onPress: () => navigation.goBack(), style: 'cancel' }
+      ]
     );
-  }
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={hp(4)} color="#ECF0F1" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Time Challenge</Text>
-      </View>
-      
-      <View style={styles.scoreContainer}>
-        <Text style={styles.timeText}>{timeLeft}s</Text>
-        <Text style={styles.scoreText}>Score: {score}</Text>
-      </View>
+    <LinearGradient colors={Gradients.screenBg} style={styles.container}>
+      <GradientHeader title={t('time.title')} onBack={() => navigation.goBack()} />
 
-      <Animated.View style={[styles.problemContainer, { transform: [{ scale: animation }] }]}>
-        <Text style={styles.problemText}>
-          {currentProblem?.num1} {currentProblem?.operation} {currentProblem?.num2}
-        </Text>
-      </Animated.View>
-
-      <View style={styles.optionsContainer}>
-        {currentProblem?.options.map((option, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.optionButton}
-            onPress={() => handleAnswer(option)}
-          >
-            <Text style={styles.optionText}>{option}</Text>
+      {!gameActive ? (
+        <View style={styles.startContainer}>
+          <Icon name="timer" size={hp(15)} color={Colors.accent} style={styles.startIcon} />
+          <Text style={styles.instruction}>{t('time.instruction')}</Text>
+          <TouchableOpacity style={styles.startBtn} onPress={startChallenge}>
+            <LinearGradient colors={Gradients.button} style={styles.startGradient}>
+              <Text style={styles.startBtnText}>{t('time.start')}</Text>
+            </LinearGradient>
           </TouchableOpacity>
-        ))}
-      </View>
-    </View>
+        </View>
+      ) : (
+        <View style={styles.gameContainer}>
+          <View style={styles.statsBar}>
+            <StatPill icon="schedule" label="Time" value={`${timeLeft}s`} color={timeLeft < 10 ? Colors.accentRed : Colors.accent} />
+            <StatPill icon="emoji-events" label="Score" value={score} color={Colors.accentGreen} />
+            <StatPill icon="bolt" label="Streak" value={`${streak}x`} color={Colors.accentYellow} />
+          </View>
+
+          <Animated.View style={[styles.problemCard, { transform: [{ scale: scaleAnim }, { translateX: shakeAnim }] }]}>
+            <LinearGradient colors={Gradients.timeChallenge} style={styles.problemGradient}>
+              <Text style={styles.problemText}>{problem?.question}</Text>
+            </LinearGradient>
+          </Animated.View>
+
+          <View style={styles.optionsGrid}>
+            {problem?.options.map((opt, i) => (
+              <OptionButton key={i} label={opt} onPress={() => handleAnswer(opt)} gradient={Gradients.timeChallenge} disabled={disabled} />
+            ))}
+          </View>
+        </View>
+      )}
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#2C3E50',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: hp(2),
-    backgroundColor: '#34495E',
-  },
-  title: {
-    fontSize: fs(3),
-    color: '#ECF0F1',
-    marginLeft: wp(4),
-    fontWeight: '600',
-  },
-  scoreContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: hp(2),
-    backgroundColor: '#34495E',
-    marginTop: hp(1),
-  },
-  timeText: {
-    fontSize: fs(4),
-    color: '#E74C3C',
-    fontWeight: 'bold',
-  },
-  scoreText: {
-    fontSize: fs(4),
-    color: '#2ECC71',
-    fontWeight: 'bold',
-  },
-  problemContainer: {
-    backgroundColor: '#34495E',
-    margin: hp(2),
-    padding: hp(4),
-    borderRadius: hp(2),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  problemText: {
-    fontSize: fs(6),
-    color: '#ECF0F1',
-    fontWeight: 'bold',
-  },
-  optionsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    padding: hp(2),
-  },
-  optionButton: {
-    backgroundColor: '#3498DB',
-    width: wp(40),
-    padding: hp(2),
-    margin: hp(1),
-    borderRadius: hp(1),
-    alignItems: 'center',
-  },
-  optionText: {
-    fontSize: fs(3),
-    color: '#ECF0F1',
-    fontWeight: '600',
-  },
-  startContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  startButton: {
-    backgroundColor: '#2ECC71',
-    padding: hp(2),
-    borderRadius: hp(1),
-    width: wp(80),
-    alignItems: 'center',
-    marginVertical: hp(2),
-  },
-  startButtonText: {
-    fontSize: fs(3),
-    color: '#ECF0F1',
-    fontWeight: '600',
-  },
-  highScoreText: {
-    fontSize: fs(4),
-    color: '#F1C40F',
-    fontWeight: '600',
-    marginBottom: hp(2),
-  },
-  instructionText: {
-    fontSize: fs(2),
-    color: '#BDC3C7',
-    textAlign: 'center',
-    marginTop: hp(2),
-    paddingHorizontal: wp(10),
-  },
+  container: { flex: 1 },
+  startContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: wp(10) },
+  startIcon: { marginBottom: hp(4) },
+  instruction: { color: Colors.textSecondary, fontSize: FontSizes.md, textAlign: 'center', marginBottom: hp(6), lineHeight: FontSizes.md * 1.5 },
+  startBtn: { width: '100%', borderRadius: hp(3), overflow: 'hidden', elevation: 5 },
+  startGradient: { paddingVertical: hp(2), alignItems: 'center' },
+  startBtnText: { color: '#fff', fontSize: FontSizes.lg, fontWeight: Fonts.bold },
+  gameContainer: { flex: 1, padding: wp(4) },
+  statsBar: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: hp(4) },
+  problemCard: { width: '100%', borderRadius: hp(3), overflow: 'hidden', marginBottom: hp(4), elevation: 8 },
+  problemGradient: { padding: hp(5), alignItems: 'center', justifyContent: 'center', minHeight: hp(20) },
+  problemText: { color: '#fff', fontSize: FontSizes.xxl, fontWeight: Fonts.bold },
+  optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around' }
 });
 
 export default TimeChallengeScreen;

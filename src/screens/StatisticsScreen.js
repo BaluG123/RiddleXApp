@@ -1,313 +1,118 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { LineChart, BarChart } from 'recharts';
+/**
+ * StatisticsScreen — Math Master v3.0
+ * Shows achievements, category performance, and overall stats
+ */
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
-import { responsiveFontSize as fs } from "react-native-responsive-dimensions";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const defaultStats = {
-  timeHighScore: 0,
-  totalProblems: 0,
-  correctAnswers: 0,
-  averageTime: 0,
-  categoryPerformance: {
-    addition: { correct: 0, total: 0 },
-    subtraction: { correct: 0, total: 0 },
-    multiplication: { correct: 0, total: 0 },
-    division: { correct: 0, total: 0 },
-  },
-  recentScores: [],
-};
-
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useGame } from '../context/GameContext';
+import { Colors, Gradients, CategoryConfig } from '../theme/colors';
+import { FontSizes, Fonts } from '../theme/typography';
+import { GradientHeader, GradientCard, StatPill } from '../components/UIComponents';
 
 const StatisticsScreen = ({ navigation }) => {
+  const { state, t, engine, achievements } = useGame();
+  
+  const allAchievements = achievements.getAll();
+  const unlockedCount = achievements.getUnlockedCount();
+  const totalCount = achievements.getTotalCount();
 
-  const [stats, setStats] = useState(defaultStats);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
-    try {
-      const storedStats = await AsyncStorage.getItem('mathStats');
-      if (storedStats) {
-        setStats(JSON.parse(storedStats));
-      } else {
-        // If no stored stats, initialize with default values
-        await AsyncStorage.setItem('mathStats', JSON.stringify(defaultStats));
-        setStats(defaultStats);
-      }
-    } catch (error) {
-      console.error('Error loading stats:', error);
-      // On error, use default stats
-      setStats(defaultStats);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const StatCard = ({ title, value, icon, color }) => (
-    <View style={[styles.statCard, { borderLeftColor: color }]}>
-      <Icon name={icon} size={hp(4)} color={color} />
-      <View style={styles.statInfo}>
-        <Text style={styles.statTitle}>{title}</Text>
-        <Text style={[styles.statValue, { color }]}>{value}</Text>
-      </View>
-    </View>
-  );
-
-
-  const getCategoryAccuracy = (category) => {
-    const { correct, total } = stats.categoryPerformance[category] || { correct: 0, total: 0 };
-    return total === 0 ? 0 : Math.round((correct / total) * 100);
-  };
-
-  const calculateTotalAccuracy = () => {
-    const totalCorrect = Object.values(stats.categoryPerformance).reduce(
-      (sum, category) => sum + (category.correct || 0),
-      0
-    );
-    
-    const totalAttempts = Object.values(stats.categoryPerformance).reduce(
-      (sum, category) => sum + (category.total || 0),
-      0
-    );
-    
-    return totalAttempts === 0 ? 0 : Math.round((totalCorrect / totalAttempts) * 100);
-  };
-
-  if (isLoading) {
-    return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.loadingText}>Loading statistics...</Text>
-      </View>
-    );
-  }
-
-  const totalCorrect = Object.values(stats.categoryPerformance).reduce(
-    (sum, category) => sum + (category.correct || 0),
-    0
-  );
-
-  const totalProblems = Object.values(stats.categoryPerformance).reduce(
-    (sum, category) => sum + (category.total || 0),
-    0
+  const categories = Object.keys(CategoryConfig).filter(cat => 
+    !['riddles', 'timeChallenge', 'mixed', 'statistics'].includes(cat)
   );
 
   return (
-
-
-<View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={hp(4)} color="#ECF0F1" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Statistics</Text>
-      </View>
-
-      <ScrollView style={styles.scrollContainer}>
-        <View style={styles.statsGrid}>
-          <StatCard
-            title="High Score"
-            value={totalCorrect}
-            icon="emoji-events"
-            color="#F1C40F"
-          />
-          <StatCard
-            title="Total Problems"
-            value={totalProblems}
-            icon="functions"
-            color="#2ECC71"
-          />
-          <StatCard
-            title="Accuracy"
-            value={`${calculateTotalAccuracy()}%`}
-            icon="check-circle"
-            color="#3498DB"
-          />
+    <LinearGradient colors={Gradients.screenBg} style={styles.container}>
+      <GradientHeader title={t('stats.title')} onBack={() => navigation.goBack()} />
+      
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Overall Stats Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📊 {t('stats.title')}</Text>
+          <View style={styles.statsGrid}>
+            <StatPill icon="check_circle" label={t('stats.correctAnswers')} value={state.totalCorrect} color={Colors.accentGreen} />
+            <StatPill icon="trending_up" label={t('stats.overallAccuracy')} value={`${engine.getAccuracy()}%`} color={Colors.accent} />
+            <StatPill icon="bolt" label={t('game.streak')} value={state.bestStreak} color={Colors.accentYellow} />
+            <StatPill icon="videogame_asset" label={t('stats.totalProblems')} value={state.totalAttempts} color={Colors.textSecondary} />
+          </View>
         </View>
 
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>Category Performance</Text>
-          <View style={styles.categoryContainer}>
-            {Object.keys(stats.categoryPerformance).map((category) => (
-              <View key={category} style={styles.categoryCard}>
-                <Text style={styles.categoryTitle}>
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </Text>
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${getCategoryAccuracy(category)}%` },
-                    ]}
-                  />
+        {/* Achievements Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🏆 {t('profile.achievements')}</Text>
+            <Text style={styles.countText}>{unlockedCount}/{totalCount}</Text>
+          </View>
+          <View style={styles.achievementsGrid}>
+            {allAchievements.map((ach, index) => (
+              <View key={index} style={[styles.achievementItem, !ach.unlocked && styles.lockedItem]}>
+                <View style={[styles.iconCircle, ach.unlocked ? styles.unlockedCircle : styles.lockedCircle]}>
+                  <Text style={styles.achievementIcon}>{ach.icon}</Text>
                 </View>
-                <Text style={styles.categoryPercentage}>
-                  {getCategoryAccuracy(category)}%
+                <Text style={styles.achievementLabel} numberOfLines={1}>
+                  {t(`achievements.${ach.id}`)}
                 </Text>
               </View>
             ))}
           </View>
         </View>
 
-        <View style={styles.recentScores}>
-          <Text style={styles.chartTitle}>Recent Scores</Text>
-          {stats.recentScores.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {stats.recentScores.map((score, index) => (
-                <View key={index} style={styles.scoreCard}>
-                  <Text style={styles.scoreValue}>{score}</Text>
-                  <Text style={styles.scoreLabel}>Game {index + 1}</Text>
+        {/* Category Performance */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🎯 {t('stats.categoryPerformance')}</Text>
+          {categories.map((cat, index) => {
+            const config = CategoryConfig[cat];
+            const hasPlayed = state.categoriesPlayed?.includes(cat);
+            return (
+              <GradientCard key={index} gradient={Gradients.card} style={styles.categoryStatCard}>
+                <View style={styles.categoryInfo}>
+                  <Text style={styles.categoryEmoji}>{config.emoji}</Text>
+                  <Text style={styles.categoryTitle}>{t(`categories.${cat}`)}</Text>
                 </View>
-              ))}
-            </ScrollView>
-          ) : (
-            <Text style={styles.noDataText}>No recent scores available</Text>
-          )}
+                {hasPlayed ? (
+                  <View style={styles.categoryResult}>
+                    <Text style={styles.playedText}>Played</Text>
+                    <Icon name="check-circle" size={hp(2)} color={Colors.accentGreen} />
+                  </View>
+                ) : (
+                  <Text style={styles.notPlayedText}>Not started</Text>
+                )}
+              </GradientCard>
+            );
+          })}
         </View>
+
+        <View style={{ height: hp(5) }} />
       </ScrollView>
-    </View> 
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#2C3E50',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: hp(2),
-    backgroundColor: '#34495E',
-  },
-  title: {
-    fontSize: fs(3),
-    color: '#ECF0F1',
-    marginLeft: wp(4),
-    fontWeight: '600',
-  },
-  scrollContainer: {
-    flex: 1,
-    padding: hp(2),
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  statCard: {
-    backgroundColor: '#34495E',
-    width: wp(44),
-    padding: hp(2),
-    marginBottom: hp(2),
-    borderRadius: hp(1),
-    borderLeftWidth: wp(1),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  statInfo: {
-    marginLeft: wp(2),
-    marginTop: hp(1),
-  },
-  statTitle: {
-    fontSize: fs(1.8),
-    color: '#BDC3C7',
-    marginBottom: hp(0.5),
-  },
-  statValue: {
-    fontSize: fs(2.5),
-    fontWeight: 'bold',
-  },
-  chartContainer: {
-    backgroundColor: '#34495E',
-    padding: hp(2),
-    borderRadius: hp(1),
-    marginVertical: hp(2),
-  },
-  chartTitle: {
-    fontSize: fs(2.2),
-    color: '#ECF0F1',
-    fontWeight: '600',
-    marginBottom: hp(2),
-  },
-  categoryContainer: {
-    marginTop: hp(1),
-  },
-  categoryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: hp(2),
-    paddingHorizontal: wp(2),
-  },
-  categoryTitle: {
-    width: wp(30),
-    fontSize: fs(1.8),
-    color: '#ECF0F1',
-  },
-  progressBar: {
-    flex: 1,
-    height: hp(1.5),
-    backgroundColor: '#465C74',
-    borderRadius: hp(0.75),
-    marginHorizontal: wp(2),
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#3498DB',
-    borderRadius: hp(0.75),
-  },
-  categoryPercentage: {
-    width: wp(15),
-    fontSize: fs(1.8),
-    color: '#ECF0F1',
-    textAlign: 'right',
-  },
-  recentScores: {
-    backgroundColor: '#34495E',
-    padding: hp(2),
-    borderRadius: hp(1),
-    marginBottom: hp(2),
-  },
-  scoreCard: {
-    backgroundColor: '#2C3E50',
-    padding: hp(2),
-    borderRadius: hp(1),
-    marginRight: wp(2),
-    alignItems: 'center',
-    width: wp(20),
-  },
-  scoreValue: {
-    fontSize: fs(2.5),
-    color: '#3498DB',
-    fontWeight: 'bold',
-  },
-  scoreLabel: {
-    fontSize: fs(1.5),
-    color: '#BDC3C7',
-    marginTop: hp(0.5),
-  },
-  centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: fs(2),
-    color: '#ECF0F1',
-  },
-  noDataText: {
-    fontSize: fs(1.8),
-    color: '#BDC3C7',
-    textAlign: 'center',
-    padding: hp(2),
-  },
+  container: { flex: 1 },
+  scrollContent: { padding: wp(4) },
+  section: { marginBottom: hp(3) },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: hp(1.5) },
+  sectionTitle: { color: Colors.textPrimary, fontSize: FontSizes.lg, fontWeight: Fonts.bold },
+  countText: { color: Colors.accent, fontSize: FontSizes.md, fontWeight: Fonts.bold },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  achievementsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
+  achievementItem: { width: wp(21), alignItems: 'center', marginBottom: hp(2), marginRight: wp(2) },
+  iconCircle: { width: hp(7), height: hp(7), borderRadius: hp(3.5), justifyContent: 'center', alignItems: 'center', marginBottom: hp(0.5) },
+  unlockedCircle: { backgroundColor: Colors.surfaceLight, borderWidth: 2, borderColor: Colors.primary },
+  lockedCircle: { backgroundColor: Colors.surface, opacity: 0.3 },
+  achievementIcon: { fontSize: hp(3.5) },
+  achievementLabel: { color: Colors.textSecondary, fontSize: hp(1.2), textAlign: 'center' },
+  lockedItem: { opacity: 0.6 },
+  categoryStatCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: hp(1.5), marginBottom: hp(1) },
+  categoryInfo: { flexDirection: 'row', alignItems: 'center' },
+  categoryEmoji: { fontSize: FontSizes.lg, marginRight: wp(3) },
+  categoryTitle: { color: Colors.textPrimary, fontSize: FontSizes.md, fontWeight: Fonts.medium },
+  categoryResult: { flexDirection: 'row', alignItems: 'center' },
+  playedText: { color: Colors.textMuted, fontSize: FontSizes.xs, marginRight: wp(1) },
+  notPlayedText: { color: Colors.textMuted, fontSize: FontSizes.xs }
 });
 
 export default StatisticsScreen;

@@ -1,617 +1,297 @@
+/**
+ * Questionscreen (Riddles) — Math Master v3.0
+ * Uses offline riddle data and modern UI
+ */
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, TouchableWithoutFeedback, Keyboard, Alert, ActivityIndicator, Image, Modal } from 'react-native';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Sound from 'react-native-sound';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Animated,
+  Alert,
+  Modal
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
-import { responsiveFontSize as fs } from "react-native-responsive-dimensions";
-import { getAnswerFeedback } from '../util/answerValidator';
-import apiClient from '../util/apiClient';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useGame } from '../context/GameContext';
+import { getRiddle } from '../data/riddleData';
+import { Colors, Gradients } from '../theme/colors';
+import { FontSizes, Fonts } from '../theme/typography';
+import { GradientHeader, CoinDisplay } from '../components/UIComponents';
 import adManager from '../util/adManager';
-import storageManager from '../util/storageManager';
 
 const Questionscreen = ({ route, navigation }) => {
   const { levelNumber } = route.params;
-  const [question, setQuestion] = useState(null);
-  const [inputValue, setInputValue] = useState('');
-  const [answer, setAnswer] = useState(null);
-  const [errorMessage, setErrorMessage] = useState(null);
-  const [errorType, setErrorType] = useState(null); // 'error' or 'success'
-  const [soundOn, setSoundOn] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [isImageQuestion, setIsImageQuestion] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [hmodalVisible, setHmodalVisible] = useState(false);
-  const [hint, setHint] = useState('');
-  const [solution, setSolution] = useState('');
-  const [watchAdForHintModalVisible, setWatchAdForHintModalVisible] = useState(false);
-  const [watchAdForSolutionModalVisible, setWatchAdForSolutionModalVisible] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const errorTimeoutRef = useRef(null);
+  const { state, t, engine, checkAchievements } = useGame();
+  const [riddle, setRiddle] = useState(null);
+  const [userAnswer, setUserAnswer] = useState('');
+  const [showHintModal, setShowHintModal] = useState(false);
+  const [showSolutionModal, setShowSolutionModal] = useState(false);
+  
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
 
-  // Load question data
   useEffect(() => {
-    const loadQuestion = async () => {
-      try {
-        setLoading(true);
-        const data = await apiClient.getQuestion(levelNumber);
-        setQuestion(data.image_question || data.math_question);
-        setIsImageQuestion(!!data.image_question);
-        setAnswer(data.answer);
-        setHint(data.hint || 'No hint available');
-        setSolution(data.solution || 'No solution available');
-      } catch (error) {
-        Alert.alert(
-          'Error Loading Question',
-          error.message || 'Failed to load the question. Please check your internet connection.',
-          [
-            { text: 'Retry', onPress: () => loadQuestion() },
-            { text: 'Go Back', onPress: () => navigation.goBack() }
-          ]
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadQuestion();
+    const data = getRiddle(levelNumber);
+    setRiddle(data);
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
+    ]).start();
   }, [levelNumber]);
 
-  // Initialize ads
-  useEffect(() => {
-    adManager.initializeAds();
-    return () => adManager.cleanup();
-  }, []);
-
-  // Load sound preference
-  useEffect(() => {
-    const loadSoundPreference = async () => {
-      const enabled = await storageManager.isSoundEnabled();
-      setSoundOn(enabled);
-    };
-    loadSoundPreference();
-  }, []);
-
-  const playSound = (soundFile) => {
-    if (!soundOn) {
-      console.log('Sound is disabled');
-      return;
-    }
-
-    try {
-      console.log('Playing sound:', soundFile);
-      const sound = new Sound(soundFile, Sound.MAIN_BUNDLE, (error) => {
-        if (error) {
-          console.warn('Sound load error:', error);
-          return;
-        }
-        console.log('Sound loaded, playing...');
-        sound.play((success) => {
-          if (success) {
-            console.log('Sound played successfully');
-            sound.release();
-          } else {
-            console.warn('Sound playback failed');
-            sound.release();
-          }
-        });
-      });
-    } catch (error) {
-      console.warn('Error creating sound:', error);
-    }
-  };
-
-  const showErrorMessage = (message, type = 'error') => {
-    setErrorMessage(message);
-    setErrorType(type);
-    
-    if (errorTimeoutRef.current) {
-      clearTimeout(errorTimeoutRef.current);
-    }
-    
-    errorTimeoutRef.current = setTimeout(() => {
-      setErrorMessage(null);
-      setErrorType(null);
-    }, 4000);
-  };
-
   const handleSubmit = async () => {
-    if (isSubmitting) return;
-
-    if (!inputValue.trim()) {
-      showErrorMessage('Please enter an answer.', 'error');
+    if (!userAnswer.trim()) {
+      Alert.alert(t('common.error'), t('riddle.enterAnswer'));
       return;
     }
 
-    setIsSubmitting(true);
+    const isCorrect = userAnswer.trim().toLowerCase() === riddle.answer.toLowerCase();
 
-    try {
-      const feedback = getAnswerFeedback(inputValue, answer);
-
-      if (feedback.isCorrect) {
-        playSound('success.mp3');
-        await storageManager.setCompletedLevel(levelNumber);
-        await storageManager.setCurrentLevel(levelNumber + 1);
-        
-        setTimeout(() => {
-          navigation.navigate('SuccessScreen', { levelNumber });
-        }, 1500);
-      } else {
-        playSound('wrong_answer.mp3');
-        showErrorMessage(feedback.message, 'error');
-        setInputValue('');
-        setIsSubmitting(false);
-      }
-    } catch (error) {
-      console.error('Error submitting answer:', error);
-      showErrorMessage('An error occurred. Please try again.', 'error');
-      setIsSubmitting(false);
+    if (isCorrect) {
+      await engine.recordCorrect('riddles', 1.5); // Riddles give more XP
+      await checkAchievements();
+      navigation.navigate('SuccessScreen', { 
+        nextLevel: levelNumber + 1,
+        xpEarned: 15,
+        coinsEarned: 10
+      });
+    } else {
+      Alert.alert(t('game.wrong'), t('game.wrong'));
+      await engine.recordWrong();
     }
   };
 
-  const handleWatchAdForHint = async () => {
-    try {
-      setWatchAdForHintModalVisible(false);
-      
-      const adShown = await adManager.showRewardedAdForHint();
-      if (adShown) {
-        setHmodalVisible(true);
-      } else {
-        setHmodalVisible(true);
-      }
-    } catch (error) {
-      console.error('Error showing hint ad:', error);
-      setHmodalVisible(true);
+  const handleHint = async () => {
+    if (await engine.spendCoins(30)) {
+      setShowHintModal(true);
+    } else {
+      Alert.alert(t('game.hint'), t('riddle.watchAdHint'), [
+        { text: t('common.watchAd'), onPress: async () => {
+          const shown = await adManager.showRewardedAdForHint();
+          if (shown) setShowHintModal(true);
+        }},
+        { text: t('common.cancel'), style: 'cancel' }
+      ]);
     }
   };
 
-  const handleWatchAdForSolution = async () => {
-    try {
-      setWatchAdForSolutionModalVisible(false);
-      
-      const adShown = await adManager.showRewardedInterstitialAdForSolution();
-      if (adShown) {
-        setModalVisible(true);
-      } else {
-        setModalVisible(true);
-      }
-    } catch (error) {
-      console.error('Error showing solution ad:', error);
-      setModalVisible(true);
-    }
+  const handleSolution = async () => {
+    Alert.alert(t('riddle.viewSolution'), t('riddle.watchAdSolution'), [
+      { text: t('common.watchAd'), onPress: async () => {
+        const shown = await adManager.showRewardedAdForSolution();
+        if (shown) setShowSolutionModal(true);
+      }},
+      { text: t('common.cancel'), style: 'cancel' }
+    ]);
   };
 
-  const toggleSound = async () => {
-    const newState = !soundOn;
-    setSoundOn(newState);
-    await storageManager.setSoundEnabled(newState);
-  };
+  if (!riddle) return null;
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <MaterialIcons name="keyboard-arrow-left" size={fs(4)} color="#ECF0F1" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Level {levelNumber}</Text>
-          <TouchableOpacity onPress={toggleSound}>
-            <MaterialIcons name={soundOn ? "volume-up" : "volume-off"} size={fs(3)} color="#ECF0F1" />
-          </TouchableOpacity>
+    <LinearGradient colors={Gradients.screenBg} style={styles.container}>
+      <GradientHeader 
+        title={t('riddle.level', { num: levelNumber })} 
+        onBack={() => navigation.goBack()} 
+        rightComponent={<CoinDisplay count={state.coins} />}
+      />
+
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], alignItems: 'center' }}>
+            <LinearGradient 
+              colors={Gradients.riddles} 
+              style={styles.questionCard}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}
+            >
+              <Icon name="psychology" size={hp(6)} color="#fff" style={styles.icon} />
+              <Text style={styles.questionText}>{riddle.math_question}</Text>
+            </LinearGradient>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder={t('game.enterAnswer')}
+                placeholderTextColor={Colors.textMuted}
+                value={userAnswer}
+                onChangeText={setUserAnswer}
+                autoCorrect={false}
+              />
+              <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
+                <LinearGradient colors={Gradients.button} style={styles.submitGradient}>
+                  <Text style={styles.submitText}>{t('game.submit')}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.actionsRow}>
+              <TouchableOpacity style={styles.actionBtn} onPress={handleHint}>
+                <Icon name="lightbulb" size={hp(3)} color={Colors.accentYellow} />
+                <Text style={styles.actionText}>{t('game.hint')}</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.actionBtn} onPress={handleSolution}>
+                <Icon name="visibility" size={hp(3)} color={Colors.accentGreen} />
+                <Text style={styles.actionText}>{t('game.solution')}</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Hint Modal */}
+      <Modal visible={showHintModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <GradientCard gradient={Gradients.card} style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('game.hint')}</Text>
+            <Text style={styles.modalText}>{riddle.hint}</Text>
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setShowHintModal(false)}>
+              <Text style={styles.closeBtnText}>{t('common.gotIt')}</Text>
+            </TouchableOpacity>
+          </GradientCard>
         </View>
+      </Modal>
 
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#4ECDC4" />
-            <Text style={styles.loadingText}>Loading question...</Text>
-          </View>
-        ) : (
-          <View style={styles.questionContainer}>
-            <View style={styles.questionContent}>
-              {isImageQuestion && question ? (
-                <Image 
-                  source={{ uri: question }} 
-                  style={styles.imageQuestion} 
-                  resizeMode="contain"
-                  onError={(error) => {
-                    console.warn('Image load error:', error);
-                    setIsImageQuestion(false);
-                  }}
-                />
-              ) : (
-                <Text style={styles.question}>{question || 'Loading...'}</Text>
-              )}
-            </View>
-          </View>
-        )}
-
-        {errorMessage && (
-          <View style={[styles.errorContainer, { backgroundColor: errorType === 'error' ? '#E74C3C' : '#27AE60' }]}>
-            <MaterialIcons 
-              name={errorType === 'error' ? 'error-outline' : 'check-circle'} 
-              size={fs(2.5)} 
-              color="#ECF0F1" 
-              style={{ marginRight: wp(2) }}
-            />
-            <Text style={styles.errorText}>{errorMessage}</Text>
-          </View>
-        )}
-
-        <View style={styles.inputContainer}>
-          <View style={styles.inputRow}>
-            <TextInput
-              style={styles.input}
-              value={inputValue}
-              editable={false}
-              placeholder="Answer"
-              placeholderTextColor="#BDC3C7"
-            />
-            <TouchableOpacity 
-              style={styles.actionButton} 
-              onPress={() => setInputValue('')}
-              disabled={isSubmitting}
-            >
-              <MaterialIcons name="cancel" size={fs(2.5)} color="#ECF0F1" />
+      {/* Solution Modal */}
+      <Modal visible={showSolutionModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <GradientCard gradient={Gradients.card} style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t('game.solution')}</Text>
+            <Text style={styles.modalText}>{riddle.solution}</Text>
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setShowSolutionModal(false)}>
+              <Text style={styles.closeBtnText}>{t('common.gotIt')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.actionButton} 
-              onPress={() => setWatchAdForHintModalVisible(true)}
-              disabled={isSubmitting}
-            >
-              <MaterialIcons name="help-outline" size={fs(2.5)} color="#ECF0F1" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.actionButton} 
-              onPress={() => setWatchAdForSolutionModalVisible(true)}
-              disabled={isSubmitting}
-            >
-              <MaterialIcons name="lightbulb" size={fs(2.5)} color="#ECF0F1" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
-              onPress={handleSubmit}
-              disabled={isSubmitting}
-            >
-              <Text style={styles.submitText}>{isSubmitting ? '...' : 'Enter'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.keypadContainer}>
-            {[1, 2, 3, 4, 5].map(num => (
-              <TouchableOpacity
-                key={num}
-                style={styles.keypadButton}
-                onPress={() => setInputValue(prev => prev + num)}
-                disabled={isSubmitting}
-              >
-                <Text style={styles.keypadText}>{num}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={styles.keypadContainer}>
-            {[6, 7, 8, 9, 0].map(num => (
-              <TouchableOpacity
-                key={num}
-                style={styles.keypadButton}
-                onPress={() => setInputValue(prev => prev + num)}
-                disabled={isSubmitting}
-              >
-                <Text style={styles.keypadText}>{num}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <View style={styles.keypadContainer}>
-            <TouchableOpacity
-              style={[styles.keypadButton, styles.specialButton]}
-              onPress={() => setInputValue(prev => prev.slice(0, -1))}
-              disabled={isSubmitting}
-            >
-              <MaterialIcons name="backspace" size={fs(2.5)} color="#ECF0F1" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.keypadButton, styles.specialButton]}
-              onPress={() => setInputValue(prev => prev + '.')}
-              disabled={isSubmitting}
-            >
-              <Text style={styles.keypadText}>.</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.keypadButton, styles.specialButton]}
-              onPress={() => setInputValue(prev => prev + '-')}
-              disabled={isSubmitting}
-            >
-              <Text style={styles.keypadText}>-</Text>
-            </TouchableOpacity>
-          </View>
+          </GradientCard>
         </View>
-
-        {/* Hint Modal */}
-        <Modal
-          animationType="slide"
-          transparent
-          visible={hmodalVisible}
-          onRequestClose={() => setHmodalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <MaterialIcons name="help-outline" size={fs(3)} color="#4ECDC4" />
-                <Text style={styles.modalTitle}>Hint</Text>
-              </View>
-              <Text style={styles.modalText}>{hint}</Text>
-              <TouchableOpacity style={styles.modalButton} onPress={() => setHmodalVisible(false)}>
-                <Text style={styles.modalButtonText}>Got it</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Solution Modal */}
-        <Modal
-          animationType="slide"
-          transparent
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <MaterialIcons name="lightbulb" size={fs(3)} color="#F39C12" />
-                <Text style={styles.modalTitle}>Solution</Text>
-              </View>
-              <Text style={styles.modalText}>{solution}</Text>
-              <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalButtonText}>Got it</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Watch Ad for Hint Modal */}
-        <Modal
-          animationType="slide"
-          transparent
-          visible={watchAdForHintModalVisible}
-          onRequestClose={() => setWatchAdForHintModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Get a Hint</Text>
-              <Text style={styles.modalText}>Watch a quick ad to unlock a helpful hint!</Text>
-              <TouchableOpacity style={styles.modalButton} onPress={handleWatchAdForHint}>
-                <MaterialIcons name="play-circle-filled" size={fs(2)} color="#ECF0F1" style={{ marginRight: wp(2) }} />
-                <Text style={styles.modalButtonText}>Watch Ad</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setWatchAdForHintModalVisible(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Watch Ad for Solution Modal */}
-        <Modal
-          animationType="slide"
-          transparent
-          visible={watchAdForSolutionModalVisible}
-          onRequestClose={() => setWatchAdForSolutionModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>View Solution</Text>
-              <Text style={styles.modalText}>Watch an ad to see the complete solution!</Text>
-              <TouchableOpacity style={styles.modalButton} onPress={handleWatchAdForSolution}>
-                <MaterialIcons name="play-circle-filled" size={fs(2)} color="#ECF0F1" style={{ marginRight: wp(2) }} />
-                <Text style={styles.modalButtonText}>Watch Ad</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setWatchAdForSolutionModalVisible(false)}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      </View>
-    </TouchableWithoutFeedback>
+      </Modal>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#2C3E50',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: hp(2),
-    backgroundColor: '#34495E',
-    borderBottomWidth: 2,
-    borderBottomColor: '#4ECDC4',
-  },
-  headerTitle: {
-    fontSize: fs(3),
-    color: '#ECF0F1',
-    fontWeight: '700',
-  },
-  questionContainer: {
-    flex: 0.65,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#34495E',
-    margin: hp(2),
-    borderRadius: hp(2),
-    padding: hp(2),
-    borderWidth: 2,
-    borderColor: '#4ECDC4',
-  },
-  questionContent: {
+  container: { flex: 1 },
+  scrollContent: { padding: wp(5), paddingBottom: hp(10) },
+  questionCard: {
     width: '100%',
-    height: '100%',
+    minHeight: hp(30),
+    borderRadius: hp(3),
+    padding: hp(3),
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    marginBottom: hp(3)
   },
-  question: {
-    fontSize: fs(3.2),
-    color: '#ECF0F1',
+  icon: { marginBottom: hp(2) },
+  questionText: {
+    color: '#fff',
+    fontSize: FontSizes.lg,
+    fontWeight: Fonts.bold,
     textAlign: 'center',
-    fontWeight: '500',
-  },
-  imageQuestion: {
-    width: wp(85),
-    height: hp(35),
-    borderRadius: hp(1),
-  },
-  loadingContainer: {
-    flex: 0.65,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#ECF0F1',
-    fontSize: fs(2),
-    marginTop: hp(2),
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: hp(1.5),
-    marginHorizontal: hp(2),
-    marginBottom: hp(1),
-    borderRadius: hp(1),
-  },
-  errorText: {
-    color: '#ECF0F1',
-    fontSize: fs(2),
-    flex: 1,
+    lineHeight: FontSizes.lg * 1.4
   },
   inputContainer: {
-    flex: 0.35,
-    padding: hp(1.5),
-    justifyContent: 'space-between',
-  },
-  inputRow: {
+    width: '100%',
+    backgroundColor: Colors.surface,
+    borderRadius: hp(2),
+    padding: hp(1),
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: hp(1.5),
+    borderWidth: 1,
+    borderColor: Colors.glassBorder,
+    marginBottom: hp(3)
   },
   input: {
-    flex: 0.4,
-    backgroundColor: '#34495E',
-    color: '#ECF0F1',
-    padding: hp(1.2),
-    borderRadius: hp(0.8),
-    marginRight: wp(2),
-    borderWidth: 1,
-    borderColor: '#4ECDC4',
-    fontSize: fs(2),
+    flex: 1,
+    color: '#fff',
+    fontSize: FontSizes.md,
+    paddingHorizontal: wp(4),
+    height: hp(7)
   },
-  actionButton: {
-    backgroundColor: '#34495E',
-    padding: hp(1.2),
-    borderRadius: hp(0.8),
-    marginRight: wp(1.5),
+  submitBtn: {
+    borderRadius: hp(1.5),
+    overflow: 'hidden'
+  },
+  submitGradient: {
+    paddingHorizontal: wp(6),
+    paddingVertical: hp(1.5),
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#4ECDC4',
-  },
-  submitButton: {
-    backgroundColor: '#4ECDC4',
-    padding: hp(1.2),
-    borderRadius: hp(0.8),
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 0.75,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
+    justifyContent: 'center'
   },
   submitText: {
-    color: '#2C3E50',
-    fontSize: fs(2),
-    fontWeight: '700',
+    color: '#fff',
+    fontSize: FontSizes.md,
+    fontWeight: Fonts.bold
   },
-  keypadContainer: {
+  actionsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: hp(1),
+    justifyContent: 'space-around',
+    width: '100%'
   },
-  keypadButton: {
-    backgroundColor: '#34495E',
-    width: wp(14),
-    height: wp(14),
-    borderRadius: wp(7),
+  actionBtn: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: wp(0.8),
+    backgroundColor: Colors.surface,
+    padding: hp(2),
+    borderRadius: hp(2),
+    width: wp(40),
     borderWidth: 1,
-    borderColor: '#4ECDC4',
+    borderColor: Colors.glassBorder
   },
-  specialButton: {
-    backgroundColor: '#4ECDC4',
+  actionText: {
+    color: Colors.textSecondary,
+    fontSize: FontSizes.sm,
+    marginTop: hp(1),
+    fontWeight: Fonts.medium
   },
-  keypadText: {
-    color: '#ECF0F1',
-    fontSize: fs(2.8),
-    fontWeight: '600',
-  },
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: wp(10)
   },
   modalContent: {
-    backgroundColor: '#34495E',
-    padding: hp(3),
-    borderRadius: hp(2),
-    width: wp(85),
-    borderWidth: 2,
-    borderColor: '#4ECDC4',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: hp(2),
+    width: '100%',
+    padding: hp(4),
+    alignItems: 'center'
   },
   modalTitle: {
-    color: '#ECF0F1',
-    fontSize: fs(2.8),
-    fontWeight: '700',
-    marginLeft: wp(3),
+    color: Colors.accentYellow,
+    fontSize: FontSizes.xl,
+    fontWeight: Fonts.bold,
+    marginBottom: hp(2)
   },
   modalText: {
-    color: '#ECF0F1',
-    fontSize: fs(2.2),
-    marginBottom: hp(2),
+    color: '#fff',
+    fontSize: FontSizes.md,
     textAlign: 'center',
-    lineHeight: fs(3),
+    marginBottom: hp(3),
+    lineHeight: FontSizes.md * 1.5
   },
-  modalButton: {
-    backgroundColor: '#4ECDC4',
-    padding: hp(1.5),
-    borderRadius: hp(1),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: hp(1),
-    flexDirection: 'row',
+  closeBtn: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: wp(8),
+    paddingVertical: hp(1.5),
+    borderRadius: hp(3)
   },
-  modalButtonText: {
-    color: '#2C3E50',
-    fontSize: fs(2.2),
-    fontWeight: '700',
-  },
-  cancelButton: {
-    backgroundColor: '#E74C3C',
-  },
+  closeBtnText: {
+    color: '#fff',
+    fontSize: FontSizes.md,
+    fontWeight: Fonts.bold
+  }
 });
 
 export default Questionscreen;

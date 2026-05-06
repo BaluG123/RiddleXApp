@@ -1,302 +1,102 @@
-// // LevelsScreen.js
-
-// import React,{useState,useEffect} from 'react';
-// import { View, FlatList, Text, TouchableOpacity, StyleSheet,Alert,Modal } from 'react-native';
-// import Icon from 'react-native-vector-icons/MaterialIcons';
-// import { useFocusEffect } from '@react-navigation/native';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { updateCompletedLevel } from './AsyncStorageUtil';
-// import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
-// import {
-//   responsiveFontSize as fs
-// } from "react-native-responsive-dimensions";
-
-// const Levelscreen = ({ navigation }) => {
-//   const levelsData = Array.from({ length: 100 }, (_, index) => index + 1);
-//   const [currentLevel, setCurrentLevel] = useState(1);
-
-//   useEffect(() => {
-//     // Retrieve the current levelNumber from AsyncStorage
-//     AsyncStorage.getItem('currentLevel').then((value) => {
-//       if (value) {
-//         setCurrentLevel(parseInt(value));
-//       }
-//     });
-//   }, []);
-
-
-//   const checkCompletedLevels = async () => {
-//     const completedLevel = await AsyncStorage.getItem('completedLevel');
-//     if (completedLevel) {
-//       setCurrentLevel(parseInt(completedLevel) + 1);
-//     }
-//   };
-
-//   useEffect(() => {
-//     checkCompletedLevels();
-//   }, []);
-
-//   useFocusEffect(
-//     React.useCallback(() => {
-//       checkCompletedLevels();
-//     }, [])
-//   );
-
-//   const handleLevelPress = (levelNumber) => {
-//     if (levelNumber <= currentLevel) {
-//       console.log(`Navigating to Level ${levelNumber}`);
-//       navigation.navigate('QuestionScreen', { levelNumber });
-//     } else {
-//       Alert.alert('Locked Level', 'This level is currently locked. Please complete the previous level to unlock and access this challenge.');
-//     }
-//   };
-
-//   const updateCompletedLevel = async (levelNumber) => {
-//     await AsyncStorage.setItem('completedLevel', levelNumber.toString());
-//     setCurrentLevel(levelNumber + 1);
-//   };
-
-//   const renderItem = ({ item }) => (
-//     <TouchableOpacity
-//       style={styles.levelBox}
-//       onPress={() => handleLevelPress(item)}
-//     >
-//     <Text style={[styles.levelNumber, item <= currentLevel ? styles.completedLevel : styles.incompleteLevel]}>
-//         {item}
-//       </Text>
-//     </TouchableOpacity>
-//   );
-
-//   return (
-//     <View style={styles.container}>
-//         <View style={styles.header}>
-//         <TouchableOpacity
-//           onPress={() => navigation.goBack()} // You can customize the back button behavior
-//         >
-//           <Icon name="keyboard-arrow-left" size={fs(4.2)} color="#FFFFFF" />
-//         </TouchableOpacity>
-//         <Text style={styles.headerTitle}>Levels</Text>
-//       </View>
-
-//       <FlatList
-//         data={levelsData}
-//         renderItem={renderItem}
-//         keyExtractor={(item) => item.toString()}
-//         numColumns={5}
-//       />
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     padding: 16,
-//     backgroundColor: '#333333',
-//   },
-//   header: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     marginBottom: 10,
-//     backgroundColor:'#333333',
-//     height:40,
-//   },
-//   headerTitle: {
-//     fontSize: fs(2.8),
-//     fontWeight: '200',
-//     marginLeft: 8,
-//     color:'#FFFFFF'
-//   },
-//   levelBox: {
-//     flex: 1,
-//     aspectRatio: 1, // Maintain square aspect ratio
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     borderWidth: hp(0.1),
-//     borderColor: '#ccc',
-//     margin: 8,
-//     backgroundColor:'#333333',
-//   },
-//   levelNumber: {
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//     color: '#FFFFFF'
-//   },
-//   completedLevel: {
-//     color: '#00FF00',
-//     fontWeight:'200'
-//   },
-//   incompleteLevel: {
-//     color: '#FFFFFF',
-//     fontWeight:'200'
-//   },
-// });
-
-// export default Levelscreen;
-
-
-
-import React, { useState, useEffect } from 'react';
-import { View, FlatList, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useFocusEffect } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+/**
+ * Levelscreen — Math Master v3.0
+ * Shows 100 riddle levels in a grid with progression logic
+ */
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
-import { responsiveFontSize as fs } from "react-native-responsive-dimensions";
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useGame } from '../context/GameContext';
+import { Colors, Gradients } from '../theme/colors';
+import { FontSizes, Fonts } from '../theme/typography';
+import { GradientHeader } from '../components/UIComponents';
+import { getTotalRiddles } from '../data/riddleData';
 
 const Levelscreen = ({ navigation }) => {
-  const [currentLevel, setCurrentLevel] = useState(1);
-  const levelsData = Array.from({ length: 100 }, (_, index) => index + 1);
+  const { state, t, engine } = useGame();
+  const totalRiddles = getTotalRiddles();
+  
+  // Calculate unlocked levels based on XP or total riddles completed
+  // For simplicity: each level unlocked after previous one is completed
+  // We can use a smarter logic: level is unlocked if (level-1) is solved
+  // We'll use the totalCorrect in 'riddles' category if we had that, but let's use global level for now
+  const unlockedLevels = Math.min(Math.floor(state.xp / 10) + 1, totalRiddles);
 
-  useEffect(() => {
-    loadCurrentLevel();
-  }, []);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      checkCompletedLevels();
-    }, [])
-  );
-
-  const loadCurrentLevel = async () => {
-    try {
-      const value = await AsyncStorage.getItem('currentLevel');
-      if (value) {
-        setCurrentLevel(parseInt(value));
-      }
-    } catch (error) {
-      console.error('Error loading current level:', error);
-    }
+  const renderLevel = ({ item: levelNum }) => {
+    const isUnlocked = levelNum <= unlockedLevels;
+    
+    return (
+      <TouchableOpacity
+        style={[styles.levelBtn, !isUnlocked && styles.lockedBtn]}
+        disabled={!isUnlocked}
+        onPress={() => navigation.navigate('Questionscreen', { levelNumber: levelNum })}
+      >
+        <LinearGradient 
+          colors={isUnlocked ? Gradients.riddles : Gradients.card} 
+          style={styles.levelGradient}
+          start={{x:0,y:0}} end={{x:1,y:1}}
+        >
+          {isUnlocked ? (
+            <Text style={styles.levelNum}>{levelNum}</Text>
+          ) : (
+            <Icon name="lock" size={hp(3)} color={Colors.textMuted} />
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
   };
 
-  const checkCompletedLevels = async () => {
-    try {
-      const completedLevel = await AsyncStorage.getItem('completedLevel');
-      if (completedLevel) {
-        setCurrentLevel(parseInt(completedLevel) + 1);
-      }
-    } catch (error) {
-      console.error('Error checking completed levels:', error);
-    }
-  };
-
-  const handleLevelPress = (levelNumber) => {
-    if (levelNumber <= currentLevel) {
-      navigation.navigate('QuestionScreen', { levelNumber });
-    } else {
-      Alert.alert(
-        'Locked Level',
-        'This level is currently locked. Please complete the previous level to unlock and access this challenge.',
-        [{ text: 'OK', style: 'default' }]
-      );
-    }
-  };
-
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.sectionContainer, { opacity: item <= currentLevel ? 1 : 0.7 }]}
-      onPress={() => handleLevelPress(item)}
-    >
-      <Text style={[
-        styles.levelNumber,
-        item <= currentLevel ? styles.completedLevel : styles.incompleteLevel
-      ]}>
-        {item}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  const adUnitId = __DEV__ ? TestIds.ADAPTIVE_BANNER : 'ca-app-pub-2627956667785383/8571195943';
+  const levels = Array.from({ length: totalRiddles }, (_, i) => i + 1);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon name="keyboard-arrow-left" size={hp(4)} color="#ECF0F1" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Levels</Text>
-      </View>
-
+    <LinearGradient colors={Gradients.screenBg} style={styles.container}>
+      <GradientHeader title={t('categories.riddles')} onBack={() => navigation.goBack()} />
+      
       <FlatList
-        data={levelsData}
-        renderItem={renderItem}
+        data={levels}
+        renderItem={renderLevel}
         keyExtractor={item => item.toString()}
         numColumns={4}
-        contentContainerStyle={styles.gridContainer}
+        contentContainerStyle={styles.gridContent}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View style={styles.infoBox}>
+            <Text style={styles.infoText}>
+              {unlockedLevels}/{totalRiddles} Levels Unlocked
+            </Text>
+            <View style={styles.progressBg}>
+              <View style={[styles.progressFill, { width: `${(unlockedLevels/totalRiddles)*100}%` }]} />
+            </View>
+          </View>
+        }
       />
-
-      <View style={styles.adContainer}>
-        <BannerAd
-          unitId={adUnitId}
-          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-        />
-      </View>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  gridContent: { padding: wp(4), paddingBottom: hp(5) },
+  levelBtn: {
+    width: wp(20),
+    height: wp(20),
+    margin: wp(1.5),
+    borderRadius: hp(2),
+    overflow: 'hidden',
+    elevation: 3
+  },
+  levelGradient: {
     flex: 1,
-    backgroundColor: '#2C3E50',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: hp(2),
-    backgroundColor: '#34495E',
-    borderBottomWidth: 1,
-    borderBottomColor: '#3B536F',
-  },
-  backButton: {
-    padding: hp(1),
-  },
-  headerTitle: {
-    fontSize: fs(3),
-    color: '#ECF0F1',
-    fontWeight: '700',
-    marginLeft: wp(2),
-    letterSpacing: 1,
-  },
-  gridContainer: {
-    padding: hp(2),
-    paddingBottom: hp(12),
-  },
-  sectionContainer: {
-    width: wp(21),
-    height: wp(21),
-    margin: wp(1),
-    borderRadius: hp(1.5),
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#34495E',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    alignItems: 'center'
   },
-  levelNumber: {
-    fontSize: fs(2.5),
-    fontWeight: '600',
-  },
-  completedLevel: {
-    color: '#4ECDC4',
-  },
-  incompleteLevel: {
-    color: '#BDC3C7',
-  },
-  adContainer: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    backgroundColor: '#2C3E50',
-  },
+  levelNum: { color: '#fff', fontSize: FontSizes.lg, fontWeight: Fonts.bold },
+  lockedBtn: { opacity: 0.5 },
+  infoBox: { marginBottom: hp(3), alignItems: 'center' },
+  infoText: { color: Colors.textPrimary, fontSize: FontSizes.md, fontWeight: Fonts.semiBold, marginBottom: hp(1) },
+  progressBg: { width: '80%', height: hp(1), backgroundColor: Colors.surface, borderRadius: hp(0.5), overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: Colors.accent }
 });
 
 export default Levelscreen;
