@@ -23,7 +23,7 @@ import { useGame } from '../context/GameContext';
 import { getRiddle } from '../data/riddleData';
 import { Colors, Gradients } from '../theme/colors';
 import { FontSizes, Fonts } from '../theme/typography';
-import { GradientHeader, CoinDisplay } from '../components/UIComponents';
+import { GradientHeader, CoinDisplay, GradientCard } from '../components/UIComponents';
 import adManager from '../util/adManager';
 
 const Questionscreen = ({ route, navigation }) => {
